@@ -104,9 +104,20 @@ def make_client(chinook: Chinook, **settings) -> TestClient:
     return TestClient(app)
 
 
-# La API es de solo lectura, así que un cliente por motor sirve para toda la sesión
-# (y la introspección se hace una sola vez).
+def login(client: TestClient) -> None:
+    resp = client.post("/api/auth/login", json={"username": ADMIN_USER, "password": ADMIN_PASSWORD})
+    assert resp.status_code == 200, resp.text
+
+
+# La API es de solo lectura, así que un cliente autenticado por motor sirve para toda la
+# sesión de tests (y la introspección se hace una sola vez).
 @pytest.fixture(scope="session")
 def client(chinook) -> Iterator[TestClient]:
     with make_client(chinook) as test_client:
+        login(test_client)
         yield test_client
+
+
+@pytest.fixture
+def sqlite_chinook(sqlite_path) -> Chinook:
+    return Chinook("sqlite", f"sqlite:///{sqlite_path}")

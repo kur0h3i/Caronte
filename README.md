@@ -91,7 +91,8 @@ y se recomienda usar un usuario de BD que solo tenga `SELECT`.
 
 ## API
 
-Todas las rutas cuelgan de `/api` y son `GET` (salvo login/logout).
+Todas las rutas cuelgan de `/api`, son `GET` (salvo login/logout) y exigen sesión
+(salvo `/api/health` y el login).
 
 | Ruta | Devuelve |
 | --- | --- |
@@ -124,6 +125,13 @@ enteros mayores de 2^53 también.
 
 ### Seguridad
 
+- **Autenticación**: un único usuario (`CARONTE_ADMIN_USER` / `CARONTE_ADMIN_PASSWORD`).
+  `POST /api/auth/login` crea una sesión en memoria y devuelve una cookie `HttpOnly`,
+  `SameSite=Strict` y limitada a `/api` (con `Secure` si `CARONTE_COOKIE_SECURE=true`).
+  `POST /api/auth/logout` la invalida en el servidor. Tras 10 intentos fallidos desde una
+  IP en 5 minutos, el login responde `429`. Al reiniciar el servidor hay que volver a entrar.
+- **Cabeceras**: `Content-Security-Policy`, `X-Frame-Options: DENY`, `nosniff`,
+  `Referrer-Policy: no-referrer` y `Cache-Control: no-store` en la API.
 - **Identificadores** (tablas y columnas, también en `sort` y `filters`): se validan contra
   la lista obtenida por introspección y los entrecomilla SQLAlchemy. Si no existen → `400`.
 - **Valores**: siempre como parámetros enlazados; en `contains` se escapan `%` y `_`.

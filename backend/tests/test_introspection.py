@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app.main import create_app
-from tests.conftest import make_settings
+from tests.conftest import login, make_settings
 
 CHINOOK_TABLES = [
     "Album",
@@ -132,5 +132,6 @@ def test_display_column_override(chinook):
     registry = app.state.registry
     registry.get("chinook").config.display_columns = {chinook.n("Employee"): chinook.n("LastName")}
     with TestClient(app) as client:
+        login(client)
         fks = _fks(_meta(client, chinook, "Customer"))
     assert fks[chinook.n("SupportRepId")]["display_column"] == chinook.n("LastName")
