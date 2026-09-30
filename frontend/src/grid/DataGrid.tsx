@@ -14,6 +14,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { useEffect, useMemo, useRef } from 'react'
 import type { Filter, Row, RowsResponse, TableMeta } from '../api/types'
 import { CellValue } from '../cells/CellValue'
+import { computeStats, GridStatsContext } from '../cells/values'
 import { EmptyState, Spinner } from '../components/feedback'
 import { defaultWidth } from './columns'
 import { FilterCell } from './FilterCell'
@@ -56,6 +57,7 @@ export function DataGrid({ meta, data, params, onParamsChange, isFetching }: Pro
     [meta],
   )
   const offset = params.page * params.size
+  const stats = useMemo(() => computeStats(meta, data?.rows ?? EMPTY_ROWS), [meta, data])
 
   const columns = useMemo(
     () =>
@@ -148,127 +150,131 @@ export function DataGrid({ meta, data, params, onParamsChange, isFetching }: Pro
     pageCount == null ? (data?.rows.length ?? 0) === params.size : params.page < pageCount - 1
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-auto">
-        {isFetching && (
-          <div className="pointer-events-none sticky top-0 left-0 z-20 h-0.5 w-full overflow-hidden">
-            <div className="h-full w-1/3 animate-[caronte-load_1s_ease-in-out_infinite] bg-accent" />
-          </div>
-        )}
-        <table className="grid border-collapse" style={{ width: table.getTotalSize() }}>
-          <thead className="sticky top-0 z-10 grid bg-surface shadow-[0_1px_0_var(--c-line)]">
-            {table.getHeaderGroups().map((group) => (
-              <tr key={group.id} className="flex">
-                {group.headers.map((header) => {
+    <GridStatsContext value={stats}>
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-auto">
+          {isFetching && (
+            <div className="pointer-events-none sticky top-0 left-0 z-20 h-0.5 w-full overflow-hidden">
+              <div className="h-full w-1/3 animate-[caronte-load_1s_ease-in-out_infinite] bg-accent" />
+            </div>
+          )}
+          <table className="grid border-collapse" style={{ width: table.getTotalSize() }}>
+            <thead className="sticky top-0 z-10 grid bg-surface shadow-[0_1px_0_var(--c-line)]">
+              {table.getHeaderGroups().map((group) => (
+                <tr key={group.id} className="flex">
+                  {group.headers.map((header) => {
+                    const col = meta.columns.find((c) => c.name === header.column.id)
+                    return (
+                      <th
+                        key={header.id}
+                        className="relative flex h-11 border-r border-line/60 p-0 font-normal"
+                        style={{ width: header.getSize() }}
+                      >
+                        {col ? (
+                          <HeaderCell
+                            col={col}
+                            fk={fkByColumn.get(col.name)}
+                            isPk={meta.primary_key.includes(col.name)}
+                            sorted={header.column.getIsSorted()}
+                            canSort={header.column.getCanSort()}
+                            onToggleSort={header.column.getToggleSortingHandler()}
+                          />
+                        ) : (
+                          <span className="flex w-full items-center justify-end px-2 font-mono text-xs text-faint">
+                            #
+                          </span>
+                        )}
+                        {header.column.getCanResize() && (
+                          <div
+                            onMouseDown={header.getResizeHandler()}
+                            onTouchStart={header.getResizeHandler()}
+                            onDoubleClick={() => header.column.resetSize()}
+                            className={`absolute top-0 right-0 z-10 h-full w-1.5 cursor-col-resize touch-none select-none hover:bg-accent/60 ${
+                              header.column.getIsResizing() ? 'bg-accent' : ''
+                            }`}
+                          />
+                        )}
+                      </th>
+                    )
+                  })}
+                </tr>
+              ))}
+              <tr className="flex border-t border-line/60">
+                {table.getFlatHeaders().map((header) => {
                   const col = meta.columns.find((c) => c.name === header.column.id)
                   return (
                     <th
                       key={header.id}
-                      className="relative flex h-11 border-r border-line/60 p-0 font-normal"
+                      className="flex border-r border-line/60 px-1 py-1 font-normal"
                       style={{ width: header.getSize() }}
                     >
-                      {col ? (
-                        <HeaderCell
+                      {col && (
+                        <FilterCell
                           col={col}
-                          fk={fkByColumn.get(col.name)}
-                          isPk={meta.primary_key.includes(col.name)}
-                          sorted={header.column.getIsSorted()}
-                          canSort={header.column.getCanSort()}
-                          onToggleSort={header.column.getToggleSortingHandler()}
-                        />
-                      ) : (
-                        <span className="flex w-full items-center justify-end px-2 font-mono text-xs text-faint">
-                          #
-                        </span>
-                      )}
-                      {header.column.getCanResize() && (
-                        <div
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
-                          onDoubleClick={() => header.column.resetSize()}
-                          className={`absolute top-0 right-0 z-10 h-full w-1.5 cursor-col-resize touch-none select-none hover:bg-accent/60 ${
-                            header.column.getIsResizing() ? 'bg-accent' : ''
-                          }`}
+                          isFk={fkByColumn.has(col.name)}
+                          filters={params.filters.filter((f) => f.column === col.name)}
+                          onChange={(next) => setColumnFilters(col.name, next)}
                         />
                       )}
                     </th>
                   )
                 })}
               </tr>
-            ))}
-            <tr className="flex border-t border-line/60">
-              {table.getFlatHeaders().map((header) => {
-                const col = meta.columns.find((c) => c.name === header.column.id)
+            </thead>
+
+            <tbody className="relative grid" style={{ height: virtualizer.getTotalSize() }}>
+              {virtualizer.getVirtualItems().map((item) => {
+                const row = rows[item.index]
                 return (
-                  <th
-                    key={header.id}
-                    className="flex border-r border-line/60 px-1 py-1 font-normal"
-                    style={{ width: header.getSize() }}
+                  <tr
+                    key={row.id}
+                    data-index={item.index}
+                    className="absolute flex w-full border-b border-line/40 hover:bg-accent/[0.06]"
+                    style={{ transform: `translateY(${item.start}px)`, height: ROW_HEIGHT }}
                   >
-                    {col && (
-                      <FilterCell
-                        col={col}
-                        isFk={fkByColumn.has(col.name)}
-                        filters={params.filters.filter((f) => f.column === col.name)}
-                        onChange={(next) => setColumnFilters(col.name, next)}
-                      />
-                    )}
-                  </th>
+                    {row.getAllCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        className="flex items-center overflow-hidden border-r border-line/30 px-2 font-mono text-xs whitespace-nowrap"
+                        style={{ width: cell.column.getSize() }}
+                      >
+                        <table.FlexRender cell={cell} />
+                      </td>
+                    ))}
+                  </tr>
                 )
               })}
-            </tr>
-          </thead>
+            </tbody>
+          </table>
 
-          <tbody className="relative grid" style={{ height: virtualizer.getTotalSize() }}>
-            {virtualizer.getVirtualItems().map((item) => {
-              const row = rows[item.index]
-              return (
-                <tr
-                  key={row.id}
-                  data-index={item.index}
-                  className="absolute flex w-full border-b border-line/40 hover:bg-accent/[0.06]"
-                  style={{ transform: `translateY(${item.start}px)`, height: ROW_HEIGHT }}
-                >
-                  {row.getAllCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="flex items-center overflow-hidden border-r border-line/30 px-2 font-mono text-xs whitespace-nowrap"
-                      style={{ width: cell.column.getSize() }}
-                    >
-                      <table.FlexRender cell={cell} />
-                    </td>
-                  ))}
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+          {!data && isFetching && (
+            <div className="p-6">
+              <Spinner />
+            </div>
+          )}
+          {data && data.rows.length === 0 && (
+            <div className="h-48">
+              <EmptyState title="Sin filas">
+                {params.filters.length
+                  ? 'Ninguna fila cumple los filtros.'
+                  : 'La tabla está vacía.'}
+              </EmptyState>
+            </div>
+          )}
+        </div>
 
-        {!data && isFetching && (
-          <div className="p-6">
-            <Spinner />
-          </div>
-        )}
-        {data && data.rows.length === 0 && (
-          <div className="h-48">
-            <EmptyState title="Sin filas">
-              {params.filters.length ? 'Ninguna fila cumple los filtros.' : 'La tabla está vacía.'}
-            </EmptyState>
-          </div>
-        )}
+        <Pagination
+          page={params.page}
+          size={params.size}
+          total={data?.total}
+          rowsOnPage={data?.rows.length ?? 0}
+          pageCount={pageCount}
+          canPrev={params.page > 0}
+          canNext={canNext}
+          onPage={(page) => table.setPageIndex(page)}
+          onSize={(size) => table.setPageSize(size)}
+        />
       </div>
-
-      <Pagination
-        page={params.page}
-        size={params.size}
-        total={data?.total}
-        rowsOnPage={data?.rows.length ?? 0}
-        pageCount={pageCount}
-        canPrev={params.page > 0}
-        canNext={canNext}
-        onPage={(page) => table.setPageIndex(page)}
-        onSize={(size) => table.setPageSize(size)}
-      />
-    </div>
+    </GridStatsContext>
   )
 }

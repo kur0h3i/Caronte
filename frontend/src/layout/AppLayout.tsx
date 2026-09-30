@@ -9,7 +9,7 @@ export function AppLayout() {
   const me = useMe()
   const logout = useLogout()
   const navigate = useNavigate()
-  const [theme, toggleTheme] = useTheme()
+  const { theme, toggle: toggleTheme } = useTheme()
 
   return (
     <div className="flex h-full flex-col">

@@ -1,12 +1,21 @@
+import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router'
 import { LoginPage } from './auth/LoginPage'
 import { RequireAuth } from './auth/RequireAuth'
-import { EmptyState } from './components/feedback'
+import { EmptyState, Spinner } from './components/feedback'
 import { AppLayout } from './layout/AppLayout'
 import { ConnectionLayout } from './layout/ConnectionLayout'
-import { ConnectionPage } from './pages/ConnectionPage'
 import { HomeRedirect } from './pages/HomeRedirect'
 import { TablePage } from './pages/TablePage'
+
+// ECharts pesa: la vista general se carga bajo demanda en su propio fichero JS.
+const ConnectionPage = lazy(() => import('./pages/ConnectionPage'))
+
+const fallback = (
+  <div className="p-6">
+    <Spinner />
+  </div>
+)
 
 // Rutas:
 //   /login
@@ -26,7 +35,14 @@ export default function App() {
       >
         <Route index element={<HomeRedirect />} />
         <Route path="c/:conn" element={<ConnectionLayout />}>
-          <Route index element={<ConnectionPage />} />
+          <Route
+            index
+            element={
+              <Suspense fallback={fallback}>
+                <ConnectionPage />
+              </Suspense>
+            }
+          />
           <Route path="t/:table" element={<TablePage />} />
         </Route>
         <Route path="*" element={<EmptyState title="404 · aquí no hay nada" />} />
