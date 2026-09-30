@@ -1,13 +1,29 @@
-# Copia este fichero a connections.toml. connections.toml no se sube al repositorio.
-# Recomendación: usa un usuario de base de datos con permisos de solo lectura (SELECT).
+# Copia este fichero a connections.toml (cp connections.example.toml connections.toml)
+# y cambia los valores en MAYÚSCULAS. connections.toml no se sube al repositorio.
+#
+# Cada bloque [connections.NOMBRE] es una base de datos; NOMBRE es lo que verás en el
+# desplegable de Caronte. Puedes poner tantos bloques como quieras.
 
-[connections.ejemplo_postgres]
-url = "postgresql://caronte_ro:clave@host.docker.internal:5432/mi_bd"
-# schema = "public"                             # opcional (por defecto, el del usuario)
-# display_columns = { empleado = "apellido" }   # opcional: fuerza la etiqueta de una tabla
+[connections.mi_bd]
+url = "postgresql://USUARIO:CONTRASEÑA@SERVIDOR:5432/BASE_DE_DATOS"
 
-[connections.ejemplo_mariadb]
-url = "mysql://caronte_ro:clave@192.168.1.20:3306/mi_bd"
+# ¿Qué pongo en SERVIDOR?
+#   - La BD está en el mismo servidor que Caronte  -> localhost
+#     (y activa COMPOSE_FILE en .env, ver .env.example)
+#   - La BD está en otro equipo de tu red           -> su IP, p. ej. 192.168.1.20
+#
+# Si la contraseña tiene @ : / # %  escríbelos así:  @=%40  :=%3A  /=%2F  #=%23  %=%25
 
-# [connections.ejemplo_sqlite]
-# url = "sqlite:///data/mi_bd.sqlite"            # relativa a este fichero (/config/data/...)
+# --- Más ejemplos (quita las almohadillas para usarlos) ---------------------------
+
+# MariaDB / MySQL:
+# [connections.otra_bd]
+# url = "mysql://USUARIO:CONTRASEÑA@SERVIDOR:3306/BASE_DE_DATOS"
+
+# SQLite (monta la carpeta del fichero en docker-compose.yml, ver README):
+# [connections.fichero]
+# url = "sqlite:///data/mi_base.sqlite"
+
+# Opciones por conexión:
+#   schema = "otro_esquema"                       # si las tablas no están en "public"
+#   display_columns = { empleados = "apellido" }  # qué columna se muestra en las FK

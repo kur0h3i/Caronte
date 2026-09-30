@@ -1,282 +1,230 @@
 # Caronte
 
-Explorador web de bases de datos relacionales (PostgreSQL, MariaDB/MySQL y SQLite).
-Sustituto de Adminer centrado en **visualizar** tablas, su contenido y cómo se relacionan,
-no en administrarlas. Es de **solo lectura**.
+Explorador web de bases de datos **PostgreSQL**, **MariaDB/MySQL** y **SQLite**.
+Sirve para **ver** tus tablas, sus datos y cómo se relacionan. Es de **solo lectura**: no
+puede modificar nada.
 
-Pensado para un servidor casero con Docker, accesible por LAN o Tailscale.
+Pensado para un servidor casero con Docker, accesible por la red local o Tailscale.
 
-- [Qué puedes hacer](#qué-puedes-hacer)
-- [Producción (Docker)](#producción-docker)
-- [Desarrollo](#desarrollo)
-- [Configuración](#configuración)
-- [API](#api) · [Seguridad](#seguridad)
-- [Arquitectura y decisiones](#arquitectura-y-decisiones)
-- [Hoja de ruta](#hoja-de-ruta)
+**Índice:** [Instalación](#instalación-en-4-pasos) ·
+[Añadir bases de datos](#añadir-bases-de-datos) · [Cómo se usa](#cómo-se-usa) ·
+[Problemas frecuentes](#problemas-frecuentes) · [Actualizar](#actualizar) ·
+[Desarrollo](docs/desarrollo.md)
 
-## Qué puedes hacer
+---
 
-- **Tablas**: barra lateral con buscador, filas aproximadas y nº de FKs.
-- **Grid**: paginación, orden y filtros en servidor; columnas redimensionables; filas
-  virtualizadas (páginas de hasta 500 sin que se resienta el navegador). Todo el estado va
-  en la URL, así que se puede compartir, recargar o volver atrás.
-  - Filtros por columna: `rock` (contiene), `=Rock`, `!=Rock`, `>5`, `<=5`, `10..20`,
-    `2024-03-01` (todo el día en columnas fecha-hora), `null`, `!null`; en una FK el texto
-    busca en la etiqueta y `#12` busca el id. Booleanos y enums tienen desplegable.
-  - Celdas por tipo: barra proporcional en números, pastillas en enums y textos con pocos
-    valores, fechas relativas (la absoluta en el tooltip), `NULL` diferenciado, JSON plegable
-    y FKs como `etiqueta #id` que abren la fila referenciada.
-- **Vista general** de la conexión: cifras y gráfica de filas por tabla (ECharts).
-- **Estigia** (mapa de datos, pestaña ✦ en la cabecera), inspirado en el grafo de Obsidian:
-  - Cada tabla es un astro (su tamaño crece con el nº de filas) y cada FK un hilo entre astros.
-  - Doble clic en una tabla **siembra filas** que orbitan a su alrededor; doble clic en una
-    fila **despliega sus relaciones**: a qué filas apunta y cuáles la referencian. Así se
-    puede seguir el hilo por toda la base de datos.
-  - Las tablas pivote N:M (p. ej. `playlist_track`) se atraviesan: una pista enlaza
-    directamente con sus playlists (línea discontinua).
-  - **✦ todas las filas**: siembra filas de todas las tablas a la vez (12–500 por tabla) y
-    une con un hilo cada fila con las filas a las que apunta por FK, así se ve la red de datos
-    completa. Queda recordado: al volver a Estigia se despliega solo.
-  - Al pasar el ratón se iluminan los vecinos; zoom con la rueda, arrastrar para moverse,
-    buscador de nodos, leyenda por colores y partículas que viajan en el sentido de cada FK.
-  - El nº de fila del grid es un enlace que abre esa fila directamente en Estigia.
-- Tema oscuro (por defecto) y claro, con la misma paleta morada.
+## Instalación en 4 pasos
 
-## Producción (Docker)
+Solo necesitas **Docker** con **Docker Compose** en el servidor.
 
-Una sola imagen: FastAPI sirve la API en `/api` y el frontend compilado en `/`.
+### 1. Descarga el proyecto
 
 ```bash
-cp .env.example .env                           # pon CARONTE_ADMIN_PASSWORD
-cp connections.example.toml connections.toml   # define tus bases de datos
+git clone https://github.com/kur0h3i/Caronte.git
+cd Caronte
+```
+
+### 2. Crea el fichero `.env` (contraseña y puerto)
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Rellena al menos estas líneas:
+
+```ini
+CARONTE_ADMIN_PASSWORD=una-contraseña-de-8-o-más
+CARONTE_PORT=8000
+```
+
+- La contraseña es la que usarás para entrar en Caronte (usuario `admin`). **Mínimo 8
+  caracteres**; si no, el contenedor no arranca.
+- `CARONTE_PORT` es el puerto en el que se abrirá. Pon el que quieras si el 8000 está ocupado.
+- **¿Tus bases de datos están en este mismo servidor (`localhost`)?** Quita la `#` de la línea
+  `COMPOSE_FILE=...` del `.env`. Explicación en [Añadir bases de datos](#añadir-bases-de-datos).
+
+### 3. Crea el fichero `connections.toml` (tus bases de datos)
+
+```bash
+cp connections.example.toml connections.toml
+nano connections.toml
+```
+
+Deja un bloque por cada base de datos, cambiando lo que está en MAYÚSCULAS:
+
+```toml
+[connections.mi_bd]
+url = "postgresql://USUARIO:CONTRASEÑA@SERVIDOR:5432/BASE_DE_DATOS"
+```
+
+### 4. Arranca
+
+```bash
 docker compose up -d --build
 ```
 
-Caronte queda en `http://<servidor>:8000`. Para otro puerto, pon `CARONTE_PORT=48213` (o el
-que quieras) en `.env`: vale tanto con la red normal de Docker como con `network_mode: host`.
+La primera vez tarda unos minutos (compila la aplicación). Cuando termine, abre
+**`http://IP-DEL-SERVIDOR:PUERTO`** (por ejemplo `http://192.168.1.10:8000`) y entra con
+`admin` y tu contraseña.
 
-- **BD en `localhost` del propio servidor (Linux)**: en `docker-compose.yml` quita `ports:` y
-  `extra_hosts:` y añade `network_mode: host`; así `localhost` en `connections.toml` es el
-  servidor y no hay que tocar la configuración de Postgres.
-
-- **Solo Tailscale**: en `docker-compose.yml` cambia `"8000:8000"` por
-  `"100.x.y.z:8000:8000"` (la IP Tailscale del servidor). Con `tailscale serve` tendrás
-  HTTPS: activa entonces `CARONTE_COOKIE_SECURE=true`.
-- **BDs en el mismo servidor**: usa `host.docker.internal` como host en las URLs.
-- **SQLite**: monta la carpeta del fichero (en solo lectura) bajo `/config/data` y usa
-  `url = "sqlite:///data/fichero.sqlite"`.
-- El contenedor corre como usuario sin privilegios, con el sistema de ficheros en solo
-  lectura, sin capabilities y con healthcheck en `/api/health`.
-- Actualizar: `git pull && docker compose up -d --build`.
-
-## Desarrollo
-
-Requisitos: Docker, Python 3.12 y [uv](https://docs.astral.sh/uv/), Node 20+.
-
-### 1. Bases de datos de ejemplo (Chinook)
+Para ver si ha arrancado bien:
 
 ```bash
-# Postgres (puerto 5433) y MariaDB (puerto 3307) con Chinook + tabla demo
-docker compose -f dev/docker-compose.yml up -d --wait
-
-# SQLite con la misma base en dev/data/chinook.sqlite
-python3 dev/build_sqlite.py
+docker compose ps        # debe poner "healthy"
+docker compose logs -f   # Ctrl+C para salir
 ```
 
-Además de Chinook, las tres BDs tienen una tabla demo (`track_review` / `TrackReview`) con
-tipos que Chinook no tiene (enum, JSON, booleano, fecha-hora y nulos). En Postgres y MariaDB
-hay un usuario **de solo lectura** `caronte_ro` / `caronte_ro`, que es el que usa
-`dev/connections.toml`. Para empezar de cero: `docker compose -f dev/docker-compose.yml down -v`.
+---
 
-### 2. Backend (FastAPI)
+## Añadir bases de datos
 
-```bash
-cd backend
-uv sync                                   # crea .venv con las dependencias
-export CARONTE_ADMIN_PASSWORD='cambia-esto'
-export CARONTE_CONFIG_FILE=../dev/connections.toml
-uv run uvicorn app.main:create_app --factory --reload --port 8000
-```
-
-API en <http://localhost:8000/api> y documentación interactiva en
-<http://localhost:8000/api/docs>.
-
-### 3. Frontend (React + Vite)
-
-```bash
-cd frontend
-npm install
-npm run dev            # http://localhost:5173 (reenvía /api al backend en :8000)
-```
-
-### Calidad
-
-```bash
-# backend
-uv run ruff check . && uv run ruff format --check .
-uv run pytest            # SQLite siempre; Postgres/MariaDB si están levantados
-
-# frontend
-npm run lint && npm run format:check && npm run typecheck
-```
-
-Los tests se ejecutan contra los tres motores (los de Postgres/MariaDB se saltan si
-`dev/docker-compose.yml` no está levantado) e incluyen intentos de inyección SQL.
-
-## Configuración
-
-Todas las variables llevan el prefijo `CARONTE_`:
-
-| Variable | Por defecto | Descripción |
-| --- | --- | --- |
-| `CARONTE_ADMIN_USER` | `admin` | Usuario de acceso |
-| `CARONTE_ADMIN_PASSWORD` | — (obligatoria, ≥ 8 caracteres) | Contraseña de acceso |
-| `CARONTE_CONFIG_FILE` | — | Ruta a `connections.toml` |
-| `CARONTE_DB_<NOMBRE>` | — | URL de una conexión (alternativa al TOML) |
-| `CARONTE_STATEMENT_TIMEOUT` | `5` | Timeout por sentencia, en segundos |
-| `CARONTE_SCHEMA_CACHE_TTL` | `300` | Segundos que se cachea la introspección |
-| `CARONTE_SESSION_TTL` | `43200` | Duración de la sesión, en segundos |
-| `CARONTE_COOKIE_SECURE` | `false` | Marca la cookie como `Secure` (actívalo con HTTPS) |
-| `CARONTE_STATIC_DIR` | — (`/app/static` en Docker) | Carpeta del frontend compilado |
-| `CARONTE_PORT` | `8000` | Puerto del contenedor (solo Docker) |
-
-### Conexiones
-
-En `connections.toml` (ver `connections.example.toml`):
+Cada base de datos es un bloque en `connections.toml`. El nombre tras `connections.` es el que
+verás en el desplegable de Caronte:
 
 ```toml
-[connections.mi_postgres]
-url = "postgresql://usuario:clave@host:5432/bd"
-schema = "public"                                  # opcional
-display_columns = { employee = "last_name" }       # opcional: fuerza la etiqueta de una tabla
+[connections.tienda]
+url = "postgresql://lector:secreto@localhost:5432/tienda"
 
-[connections.mi_sqlite]
-url = "sqlite:///datos/app.sqlite"                 # relativa al propio TOML
+[connections.blog]
+url = "mysql://lector:secreto@192.168.1.20:3306/blog"
 ```
 
-O con variables de entorno: `CARONTE_DB_MI_POSTGRES=postgresql://...` (el nombre de la
-conexión es el sufijo en minúsculas). Si existe en ambos sitios, gana la variable.
+Formato de la URL:
 
-Motores y drivers: `postgresql` (psycopg 3), `mysql`/`mariadb` (PyMySQL) y `sqlite`.
-Si la URL no indica driver se añade el correcto automáticamente. Las credenciales nunca
-salen del backend: `/api/connections` solo devuelve nombre y motor.
-
-## API
-
-Todas las rutas cuelgan de `/api`, son `GET` (salvo login/logout) y exigen sesión
-(salvo `/api/health` y el login).
-
-| Ruta | Devuelve |
+| Motor | URL |
 | --- | --- |
-| `/connections` | Conexiones configuradas: nombre y motor |
-| `/connections/{c}/tables` | Tablas y vistas: nombre, filas aproximadas, nº de FKs |
-| `/connections/{c}/tables/{t}/meta` | Columnas (tipo normalizado y nativo), PK y FKs con su columna de display |
-| `/connections/{c}/tables/{t}/rows` | Filas paginadas, ordenadas y filtradas |
-| `/connections/{c}/graph` | Esquema como grafo: tablas (display, ¿explorable?, ¿pivote?) y relaciones |
-| `/connections/{c}/tables/{t}/neighbors?id=` | Una fila, las filas a las que apunta y las que la referencian (`limit` por relación, máx. 50) |
+| PostgreSQL | `postgresql://USUARIO:CONTRASEÑA@SERVIDOR:5432/BASE` |
+| MariaDB / MySQL | `mysql://USUARIO:CONTRASEÑA@SERVIDOR:3306/BASE` |
+| SQLite | `sqlite:///data/fichero.sqlite` (ver más abajo) |
 
-Tipos normalizados: `int`, `numeric`, `text`, `bool`, `date`, `datetime`, `json`, `enum`.
+### ¿Qué pongo en `SERVIDOR`?
 
-Parámetros de `rows`:
+| Dónde está tu base de datos | En `SERVIDOR` pones | Además |
+| --- | --- | --- |
+| En **el mismo servidor** que Caronte (Linux) | `localhost` | En `.env`, quita la `#` de `COMPOSE_FILE=docker-compose.yml:docker-compose.host.yml` |
+| En **otro equipo** de tu red | su IP, p. ej. `192.168.1.20` | Nada |
+| En el mismo equipo con **Docker Desktop** (Mac/Windows) | `host.docker.internal` | Nada |
 
-- `limit` (1–500, por defecto 100) y `offset`.
-- `sort=Columna` o `sort=-Columna` (descendente). Una FK se ordena por su etiqueta.
-  Siempre se desempata por la PK para que la paginación sea estable.
-- `filters`: JSON con una lista de `{"column", "op", "value"}`, combinados con AND.
-  Operadores: `eq`, `ne`, `lt`, `lte`, `gt`, `gte`, `contains` (sin distinguir mayúsculas;
-  en una FK busca en la etiqueta), `is_null`, `not_null`.
+> ¿Por qué lo de `COMPOSE_FILE`? Dentro de un contenedor, `localhost` es el propio contenedor,
+> no tu servidor. Esa línea hace que Caronte use la red del servidor y así `localhost` apunta
+> a tu base de datos, sin tocar la configuración de Postgres ni de MariaDB.
 
-  ```
-  /rows?sort=-Milliseconds&filters=[{"column":"GenreId","op":"eq","value":1}]
-  ```
+### Más opciones por conexión
 
-Cada FK de una columna llega como `{"id": 1, "label": "Rock"}`. La etiqueta sale de un
-`LEFT JOIN` a la columna de display de la tabla referenciada, elegida por prioridad:
-`name`, `nombre`, `title`, `titulo`, `email`, `username` (sin distinguir mayúsculas ni
-tildes); si no hay, la primera columna de texto; y si tampoco, la PK. Se puede forzar
-por tabla con `display_columns`.
-
-Los números `NUMERIC`/`DECIMAL` se envían como texto para no perder precisión, y los
-enteros mayores de 2^53 también.
-
-## Seguridad
-
-- **Solo lectura en tres capas**: la API no tiene endpoints de escritura (hay un test que lo
-  comprueba); cada conexión se abre en modo solo lectura (`default_transaction_read_only` en
-  Postgres, `SET SESSION TRANSACTION READ ONLY` en MariaDB/MySQL, `mode=ro` + `query_only` en
-  SQLite); y se recomienda un usuario de BD que solo tenga `SELECT`.
-- **Identificadores** (tablas y columnas, también en `sort` y `filters`): se validan contra
-  la lista obtenida por introspección y los entrecomilla SQLAlchemy. Si no existen → `400`.
-- **Valores**: siempre como parámetros enlazados, convertidos antes al tipo de la columna;
-  en `contains` se escapan `%` y `_`.
-- **Límites**: `limit` ≤ 500, como mucho 20 filtros y timeout por sentencia
-  (`CARONTE_STATEMENT_TIMEOUT`). Si se agota → `504`. Si solo se agota el recuento total,
-  las filas se devuelven igualmente con `total: null`.
-- **Autenticación**: un único usuario por variables de entorno. `POST /api/auth/login` crea
-  una sesión en memoria y devuelve una cookie `HttpOnly`, `SameSite=Strict` y limitada a
-  `/api` (con `Secure` si `CARONTE_COOKIE_SECURE=true`). `POST /api/auth/logout` la invalida
-  en el servidor. Tras 10 intentos fallidos desde una IP en 5 minutos, el login responde `429`.
-  Al reiniciar el servidor hay que volver a entrar.
-- **Cabeceras**: `Content-Security-Policy` sin scripts inline ni recursos externos (la fuente
-  va empaquetada), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer` y
-  `Cache-Control: no-store` en la API.
-- Tests de inyección: `backend/tests/test_injection.py` y `backend/tests/test_graph.py`.
-
-## Arquitectura y decisiones
-
-```
-caronte/
-├── backend/
-│   ├── app/
-│   │   ├── main.py            # create_app(): routers, middleware, frontend estático
-│   │   ├── config.py          # Settings (variables CARONTE_*)
-│   │   ├── connections/       # carga de conexiones, engines de solo lectura, errores
-│   │   ├── introspection/     # inspect(), tipos normalizados, columna de display, caché
-│   │   ├── data/              # consulta de filas: filtros, orden, JOIN de FKs, serialización
-│   │   ├── graph/             # Estigia: esquema como grafo y vecinos de una fila
-│   │   ├── security/          # validación de identificadores, auth, cabeceras
-│   │   └── frontend.py        # sirve el build de React con fallback de SPA
-│   └── tests/
-├── frontend/src/
-│   ├── api/                   # cliente fetch, tipos y hooks de TanStack Query
-│   ├── grid/                  # DataGrid (TanStack Table + Virtual), filtros, paginación
-│   ├── cells/                 # renderizado de celdas por tipo
-│   ├── map/                   # Estigia: modelo, motor (d3-force + canvas) y panel
-│   ├── pages/ · layout/ · auth/ · theme/
-├── dev/                       # docker-compose con Chinook en Postgres/MariaDB + SQLite
-├── Dockerfile · docker-compose.yml
+```toml
+[connections.tienda]
+url = "postgresql://lector:secreto@localhost:5432/tienda"
+schema = "ventas"                              # si las tablas no están en "public"
+display_columns = { clientes = "razon_social" } # qué columna se muestra al enlazar a "clientes"
 ```
 
-Decisiones principales (y por qué):
+- **Contraseña con símbolos**: si tiene `@ : / # %`, escríbelos así en la URL:
+  `@`→`%40`, `:`→`%3A`, `/`→`%2F`, `#`→`%23`, `%`→`%25`.
+- **SQLite**: en `docker-compose.yml`, en `volumes:`, añade la carpeta del fichero
+  (`- /ruta/a/mis/datos:/config/data:ro`) y usa `url = "sqlite:///data/fichero.sqlite"`.
+- **Recomendado**: usa un usuario de base de datos que solo tenga permiso de lectura.
+  Para Postgres:
 
-- **SQLAlchemy Core síncrono** con endpoints `def`: FastAPI los ejecuta en un threadpool.
-  PyMySQL y sqlite3 son síncronos, así que async no aportaría nada y complicaría el código.
-- **La introspección es la lista blanca**: se cachea (TTL) y toda tabla/columna que llega
-  del usuario se busca en ella antes de construir la consulta.
-- **Columnas sin tipo en las consultas** (`table()`/`column()`): recibimos los valores tal
-  cual del driver y los serializamos nosotros; así un formato raro de fecha en SQLite no
-  rompe la consulta. Los valores de filtros se convierten en Python al tipo de la columna.
-- **LEFT JOIN solo contra la PK** de la tabla referenciada: garantiza que no se duplican filas.
-- **Sesiones en memoria** en vez de cookies firmadas: el logout invalida de verdad y no hay
-  clave que custodiar; a cambio, reiniciar obliga a volver a entrar.
-- **Estado del grid en la URL**: enlaces de FK, botón atrás y recarga funcionan sin más.
-- **Estigia con d3-force + canvas propio** en lugar del grafo de ECharts: permite desplegar
-  nodos de forma incremental sin recolocar todo, y controlar el aspecto (halos, partículas,
-  resaltado de vecinos). ECharts se usa para las gráficas clásicas.
-- **Estadísticas de celda en el navegador** (máximo para las barras, cardinalidad para las
-  pastillas) sobre la página visible: cero consultas extra.
+  ```sql
+  CREATE ROLE lector LOGIN PASSWORD 'secreto';
+  GRANT CONNECT ON DATABASE tienda TO lector;
+  GRANT USAGE ON SCHEMA public TO lector;
+  GRANT SELECT ON ALL TABLES IN SCHEMA public TO lector;
+  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO lector;
+  ```
 
-## Hoja de ruta
+Después de cambiar `connections.toml` o `.env`, aplica los cambios con:
 
-Fuera del MVP, pero la arquitectura lo deja preparado:
+```bash
+docker compose up -d
+```
 
-- Histogramas en las cabeceras (endpoint de estadísticas en `data/` + ECharts).
-- Panel de detalle de fila con relaciones inversas en el grid (ya existe `neighbors`).
-- Vistas alternativas: kanban (enums), timeline (fechas), galería (URLs de imágenes).
-- Editor SQL de solo lectura, diagrama ER y, más adelante, escritura de datos.
-- Conexiones gestionadas desde la UI.
+---
+
+## Cómo se usa
+
+### Tablas
+
+- A la izquierda, la lista de tablas con su nº aproximado de filas. Arriba, el buscador.
+- **Ordenar**: clic en el nombre de una columna (ascendente → descendente → sin orden).
+- **Filtrar**: escribe en la casilla bajo cada columna.
+
+  | Escribes | Busca |
+  | --- | --- |
+  | `rock` | contiene "rock" (sin distinguir mayúsculas) |
+  | `=Rock` / `!=Rock` | exactamente "Rock" / distinto de "Rock" |
+  | `>5`, `>=5`, `<5`, `<=5` | comparaciones en números y fechas |
+  | `10..20` | entre 10 y 20 |
+  | `2024-03-01` | ese día completo (en columnas de fecha) |
+  | `null` / `!null` | vacíos / no vacíos |
+  | `#12` | en una columna que enlaza a otra tabla: el registro con id 12 |
+
+- **Enlaces entre tablas**: las columnas que apuntan a otra tabla se ven como `nombre #id`.
+  Haz clic para ir a ese registro; con el botón "atrás" del navegador vuelves.
+- La URL guarda el orden, los filtros y la página: puedes guardarla o compartirla.
+
+### ✦ Estigia (mapa de datos)
+
+Pestaña **estigia** en la cabecera. Es un mapa, al estilo del grafo de Obsidian, de cómo se
+relacionan tus datos:
+
+- Cada **tabla** es un astro y cada **relación** entre tablas, un hilo.
+- **Doble clic en una tabla**: aparecen algunas de sus filas alrededor.
+- **Doble clic en una fila**: aparecen las filas con las que está relacionada.
+- **✦ todas las filas**: despliega filas de todas las tablas a la vez y las une entre sí.
+  Elige cuántas por tabla (con 50–100 va fluido). Se recuerda para la próxima vez.
+- **Clic** en cualquier punto: sus datos en el panel de la derecha.
+- Rueda del ratón para el zoom, arrastrar para moverte, buscador arriba a la izquierda.
+- Desde una tabla, el **número de fila** abre esa fila directamente en el mapa.
+
+---
+
+## Problemas frecuentes
+
+| Qué ves | Qué pasa | Solución |
+| --- | --- | --- |
+| El contenedor se reinicia sin parar y en los logs sale `admin_password ... at least 8` | La contraseña del `.env` es corta | Pon 8 caracteres o más y `docker compose up -d` |
+| `failed to resolve host 'SERVIDOR'` (u otro nombre) | En `connections.toml` quedó un texto de ejemplo | Cambia `SERVIDOR` por `localhost` o la IP |
+| `connection refused` con `localhost` | El contenedor no usa la red del servidor | Quita la `#` de `COMPOSE_FILE=...` en `.env` y `docker compose up -d` |
+| `password authentication failed` | Usuario o contraseña de la BD incorrectos | Revísalos; escapa los símbolos (`@`→`%40`…) |
+| `no pg_hba.conf entry` | Postgres no deja entrar a ese usuario desde ahí | Añade una regla en `pg_hba.conf` o conecta por `localhost` |
+| La conexión aparece pero **sin tablas** | Las tablas están en otro esquema | Añade `schema = "nombre"` a la conexión |
+| `permission denied for table …` | El usuario no puede leer esa tabla | `GRANT SELECT ON ...` a ese usuario |
+| `La consulta superó el tiempo límite` | Consulta lenta (tabla enorme) | Filtra más, o sube `CARONTE_STATEMENT_TIMEOUT` en `.env` |
+| No se abre la web | Puerto ocupado o firewall | Cambia `CARONTE_PORT` en `.env`; abre el puerto en el firewall |
+
+Los errores de base de datos aparecen en la propia web, en rojo, con el motivo.
+
+---
+
+## Actualizar
+
+```bash
+cd Caronte
+git pull
+docker compose up -d --build
+```
+
+Tus ficheros `.env` y `connections.toml` no se tocan al actualizar.
+
+---
+
+## Seguridad en breve
+
+- **Solo lectura** en tres niveles: la aplicación no tiene ninguna función de escritura, cada
+  conexión se abre en modo lectura y se recomienda un usuario de BD de solo lectura.
+- Acceso con usuario y contraseña; tras 10 intentos fallidos se bloquea 5 minutos.
+- Las credenciales de las bases de datos nunca llegan al navegador.
+- **Solo por Tailscale**: en `docker-compose.yml` cambia la línea de `ports:` por
+  `"100.x.y.z:${CARONTE_PORT:-8000}:${CARONTE_PORT:-8000}"` (la IP Tailscale del servidor).
+  Si usas `tailscale serve` (HTTPS), pon `CARONTE_COOKIE_SECURE=true` en `.env`.
+
+Detalles técnicos, API y cómo desarrollar: [docs/desarrollo.md](docs/desarrollo.md).
+
+---
 
 ## Créditos
 
-Los scripts de Chinook (`dev/chinook/`) son de
-[lerocha/chinook-database](https://github.com/lerocha/chinook-database) v1.4.5, licencia MIT.
+La base de datos de ejemplo (`dev/chinook/`) es
+[Chinook](https://github.com/lerocha/chinook-database) v1.4.5, licencia MIT.

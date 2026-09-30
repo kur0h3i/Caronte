@@ -2,6 +2,8 @@
 #   cp .env.example .env                           # y pon una contraseña
 #   cp connections.example.toml connections.toml   # y define tus bases de datos
 #   docker compose up -d --build
+# Si tus BDs están en localhost del servidor, activa docker-compose.host.yml desde .env
+# (línea COMPOSE_FILE, ver .env.example) en vez de editar este fichero.
 name: caronte
 
 services:

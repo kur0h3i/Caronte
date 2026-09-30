@@ -1,0 +1,11 @@
+# Variante para cuando tus bases de datos escuchan en localhost del propio servidor (Linux).
+# El contenedor usa directamente la red de la máquina, así que "localhost" en
+# connections.toml es el servidor. El puerto lo sigue decidiendo CARONTE_PORT.
+#
+# Se activa añadiendo esta línea a .env:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.host.yml
+services:
+  caronte:
+    network_mode: host
+    ports: !reset []
+    extra_hosts: !reset []
