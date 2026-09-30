@@ -49,6 +49,22 @@ uv run ruff check . && uv run ruff format --check .
 uv run pytest            # SQLite siempre; Postgres/MariaDB si están levantados
 ```
 
+### Frontend (React + Vite)
+
+Con el backend corriendo en el puerto 8000:
+
+```bash
+cd frontend
+npm install
+npm run dev            # http://localhost:5173 (reenvía /api al backend)
+```
+
+Calidad:
+
+```bash
+npm run lint && npm run format:check && npm run typecheck
+```
+
 ## Configuración
 
 Todas las variables llevan el prefijo `CARONTE_`:

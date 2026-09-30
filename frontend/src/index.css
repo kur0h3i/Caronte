@@ -1,0 +1,88 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/jetbrains-mono';
+
+/* El modo oscuro se activa con la clase .dark en <html> (predeterminado). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Paleta en variables CSS: los componentes usan siempre los mismos nombres
+ * (bg-surface, text-muted, border-line, text-accent...) y cada tema redefine los valores.
+ */
+@theme inline {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-raised: var(--c-raised);
+  --color-line: var(--c-line);
+  --color-fg: var(--c-fg);
+  --color-muted: var(--c-muted);
+  --color-faint: var(--c-faint);
+  --color-accent: var(--c-accent);
+  --color-accent-strong: var(--c-accent-strong);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-on-accent: var(--c-on-accent);
+  --color-danger: var(--c-danger);
+  --color-ok: var(--c-ok);
+}
+
+:root {
+  --c-bg: #f6f4fb;
+  --c-surface: #ffffff;
+  --c-raised: #eee9f8;
+  --c-line: #dcd3ee;
+  --c-fg: #1c1629;
+  --c-muted: #5f5578;
+  --c-faint: #9b90b3;
+  --c-accent: #7c3aed;
+  --c-accent-strong: #6d28d9;
+  --c-accent-soft: #8b5cf6;
+  --c-on-accent: #ffffff;
+  --c-danger: #dc2626;
+  --c-ok: #047857;
+  color-scheme: light;
+}
+
+.dark {
+  --c-bg: #07060b;
+  --c-surface: #0d0b13;
+  --c-raised: #16131f;
+  --c-line: #252036;
+  --c-fg: #e7e2f3;
+  --c-muted: #9b92b5;
+  --c-faint: #615979;
+  --c-accent: #a855f7;
+  --c-accent-strong: #9333ea;
+  --c-accent-soft: #d8b4fe;
+  --c-on-accent: #0b0712;
+  --c-danger: #f87171;
+  --c-ok: #34d399;
+  color-scheme: dark;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-bg font-sans text-fg antialiased;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--c-accent) 35%, transparent);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--c-accent) 45%, transparent) transparent;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--c-accent-soft);
+    outline-offset: 1px;
+  }
+}
