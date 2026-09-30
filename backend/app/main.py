@@ -11,6 +11,7 @@ from app.config import Settings
 from app.connections.registry import ConnectionRegistry
 from app.connections.router import router as connections_router
 from app.data.router import router as data_router
+from app.graph.router import router as graph_router
 from app.introspection.cache import SchemaCache
 from app.introspection.router import router as introspection_router
 from app.security.auth import LoginThrottle, SessionStore, require_session
@@ -61,6 +62,7 @@ def create_app(
     api.include_router(connections_router)
     api.include_router(introspection_router)
     api.include_router(data_router)
+    api.include_router(graph_router)
 
     app.include_router(public)
     app.include_router(api)
