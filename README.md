@@ -34,6 +34,9 @@ Pensado para un servidor casero con Docker, accesible por LAN o Tailscale.
     puede seguir el hilo por toda la base de datos.
   - Las tablas pivote N:M (p. ej. `playlist_track`) se atraviesan: una pista enlaza
     directamente con sus playlists (línea discontinua).
+  - **✦ todas las filas**: siembra filas de todas las tablas a la vez (12–500 por tabla) y
+    une con un hilo cada fila con las filas a las que apunta por FK, así se ve la red de datos
+    completa. Queda recordado: al volver a Estigia se despliega solo.
   - Al pasar el ratón se iluminan los vecinos; zoom con la rueda, arrastrar para moverse,
     buscador de nodos, leyenda por colores y partículas que viajan en el sentido de cada FK.
   - El nº de fila del grid es un enlace que abre esa fila directamente en Estigia.

@@ -1,4 +1,11 @@
-import type { CellValue, GraphTable, Neighbors, Row, SchemaGraph } from '../api/types'
+import type {
+  CellValue,
+  GraphRelation,
+  GraphTable,
+  Neighbors,
+  Row,
+  SchemaGraph,
+} from '../api/types'
 
 /**
  * Modelo del mapa "Estigia" (sin dibujo ni física: eso es cosa de engine.ts).
@@ -105,6 +112,12 @@ export class MapModel {
   /** Cuántas filas se han sembrado por tabla (para pedir las siguientes). */
   seeded = new Map<string, number>()
   private colors = new Map<string, number>()
+  /** FKs de una sola columna que salen de cada tabla (para enlazar filas sembradas). */
+  private relationsFrom = new Map<string, GraphRelation[]>()
+  /** Enlaces entre filas que esperan a que ambos extremos estén en el mapa. */
+  private pendingRefs = new Map<string, LinkData>()
+  /** tabla + etiqueta -> nodos con esa etiqueta (para detectar duplicadas sin recorrer todo). */
+  private labelIndex = new Map<string, Set<string>>()
 
   loadSchema(graph: SchemaGraph) {
     this.nodes.clear()
@@ -112,6 +125,15 @@ export class MapModel {
     this.rows.clear()
     this.neighbors.clear()
     this.seeded.clear()
+    this.pendingRefs.clear()
+    this.labelIndex.clear()
+    this.relationsFrom = new Map()
+    for (const r of graph.relations) {
+      if (r.from_columns.length !== 1) continue
+      const list = this.relationsFrom.get(r.from_table) ?? []
+      list.push(r)
+      this.relationsFrom.set(r.from_table, list)
+    }
     this.tables = new Map(graph.tables.map((t) => [t.name, t]))
     this.colors = new Map(
       [...graph.tables].sort((a, b) => a.name.localeCompare(b.name)).map((t, i) => [t.name, i]),
@@ -156,14 +178,68 @@ export class MapModel {
    */
   private uniqueLabel(table: string, rowId: string | number, base: string, selfId: string) {
     if (base.startsWith('#')) return base
-    let duplicated = false
-    for (const n of this.nodes.values()) {
-      if (n.kind === 'row' && n.table === table && n.id !== selfId && n.baseLabel === base) {
-        duplicated = true
-        n.label = `${base} #${n.rowId}`
+    const key = `${table}\u0000${base}`
+    const same = this.labelIndex.get(key) ?? new Set<string>()
+    same.add(selfId)
+    this.labelIndex.set(key, same)
+    if (same.size === 1) return base
+    for (const otherId of same) {
+      const other = this.nodes.get(otherId)
+      if (other && otherId !== selfId) other.label = `${base} #${other.rowId}`
+    }
+    return `${base} #${rowId}`
+  }
+
+  /** Enlace entre dos filas; si aún falta alguna, queda pendiente hasta que aparezca. */
+  private addRowLink(kind: LinkKind, source: string, target: string, label: string) {
+    if (this.nodes.has(source) && this.nodes.has(target)) this.addLink(kind, source, target, label)
+    else
+      this.pendingRefs.set(`${kind}:${source}->${target}:${label}`, {
+        id: '',
+        kind,
+        source,
+        target,
+        label,
+      })
+  }
+
+  private resolvePending() {
+    for (const [key, ref] of this.pendingRefs) {
+      if (this.nodes.has(ref.source) && this.nodes.has(ref.target)) {
+        this.addLink(ref.kind, ref.source, ref.target, ref.label)
+        this.pendingRefs.delete(key)
       }
     }
-    return duplicated ? `${base} #${rowId}` : base
+  }
+
+  /** FKs de una fila sembrada -> enlaces con las filas a las que apunta (si están en el mapa). */
+  private linkRowReferences(table: string, nodeId: string, row: Row) {
+    for (const rel of this.relationsFrom.get(table) ?? []) {
+      const target = plainId(row[rel.from_columns[0]])
+      if (target === undefined) continue
+      this.addRowLink('fk', nodeId, rowNodeId(rel.to_table, target), rel.from_columns[0])
+    }
+  }
+
+  /**
+   * Filas de una tabla pivote (N:M): no se pintan, pero unen sus dos extremos con un enlace
+   * discontinuo si ambos están en el mapa (p. ej. pista <-> playlist).
+   */
+  linkJunctionRows(table: string, rows: Row[]) {
+    const info = this.tables.get(table)
+    const rels = (this.relationsFrom.get(table) ?? []).filter((r) =>
+      info?.primary_key.includes(r.from_columns[0]),
+    )
+    if (rels.length < 2) return
+    const [a, b] = rels
+    for (const row of rows) {
+      const idA = plainId(row[a.from_columns[0]])
+      const idB = plainId(row[b.from_columns[0]])
+      if (idA === undefined || idB === undefined) continue
+      this.addRowLink('m2m', rowNodeId(a.to_table, idA), rowNodeId(b.to_table, idB), table)
+    }
+    this.resolvePending()
+    this.notify()
   }
 
   /** Añade (o actualiza) una fila y la engancha a su tabla. Devuelve el id del nodo. */
@@ -208,8 +284,10 @@ export class MapModel {
         labelText(info.display_column ? row[info.display_column] : undefined, `#${rowId}`),
       )
       this.rows.set(id, row)
+      this.linkRowReferences(table, id, row)
     }
     this.seeded.set(table, (this.seeded.get(table) ?? 0) + rows.length)
+    this.resolvePending()
     this.notify()
   }
 
@@ -236,6 +314,7 @@ export class MapModel {
         else this.addLink('fk', id, center, group.column)
       }
     }
+    this.resolvePending()
     this.notify()
     return center
   }
@@ -247,6 +326,8 @@ export class MapModel {
     this.rows.clear()
     this.neighbors.clear()
     this.seeded.clear()
+    this.pendingRefs.clear()
+    this.labelIndex.clear()
     this.notify()
   }
 }

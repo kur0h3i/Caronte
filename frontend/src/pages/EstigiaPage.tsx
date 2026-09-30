@@ -12,6 +12,26 @@ import { readMapColors, tableColor } from '../map/palette'
 import { useTheme } from '../theme/theme'
 
 const SEED_ROWS = 12
+const PER_TABLE_OPTIONS = [12, 50, 100, 250, 500] as const
+const ALL_KEY = 'caronte-estigia-todas'
+const PER_TABLE_KEY = 'caronte-estigia-por-tabla'
+const SEED_CONCURRENCY = 4
+
+function readPref(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function savePref(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // almacenamiento bloqueado: la preferencia no se recordará
+  }
+}
 
 /**
  * Estigia: mapa de datos al estilo del grafo de Obsidian.
@@ -32,8 +52,70 @@ export default function EstigiaPage() {
   const [error, setError] = useState<string | null>(null)
   const [particles, setParticles] = useState(true)
   const [search, setSearch] = useState('')
+  const [allRows, setAllRows] = useState(() => readPref(ALL_KEY) === '1')
+  const [perTable, setPerTable] = useState<number>(() => {
+    const n = Number(readPref(PER_TABLE_KEY))
+    return (PER_TABLE_OPTIONS as readonly number[]).includes(n) ? n : 50
+  })
+  const [seeding, setSeeding] = useState<{ done: number; total: number } | null>(null)
+  const seedRun = useRef(0)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const engineRef = useRef<MapEngine | null>(null)
+
+  /**
+   * Siembra `limit` filas de cada tabla. Las pivote (N:M) no se pintan: sus filas solo unen
+   * los dos extremos. Las FKs entre filas sembradas se convierten en hilos del mapa.
+   */
+  async function seedAll(limit: number) {
+    const run = ++seedRun.current
+    model.clearRows()
+    const all = [...model.tables.values()].filter((t) => t.kind === 'table')
+    const queue = [...all.filter((t) => t.explorable), ...all.filter((t) => t.junction)]
+    const failed: string[] = []
+    setSeeding({ done: 0, total: queue.length })
+    let next = 0
+    const worker = async () => {
+      while (next < queue.length) {
+        const table = queue[next++]
+        const params = { limit, offset: 0 }
+        try {
+          const page = await queryClient.fetchQuery({
+            queryKey: keys.rows(conn, table.name, params),
+            queryFn: () => api.rows(conn, table.name, params),
+          })
+          if (run !== seedRun.current) return
+          if (table.junction) model.linkJunctionRows(table.name, page.rows)
+          else model.seedRows(table.name, page.rows)
+        } catch {
+          failed.push(table.name)
+        }
+        if (run === seedRun.current) setSeeding((s) => s && { ...s, done: s.done + 1 })
+      }
+    }
+    await Promise.all(Array.from({ length: SEED_CONCURRENCY }, worker))
+    if (run !== seedRun.current) return
+    setSeeding(null)
+    if (failed.length) setError(`No se pudieron sembrar: ${failed.join(', ')}`)
+    setTimeout(() => engineRef.current?.fit(), 900)
+  }
+
+  function toggleAllRows() {
+    const next = !allRows
+    setAllRows(next)
+    savePref(ALL_KEY, next ? '1' : '0')
+    if (next) void seedAll(perTable)
+    else {
+      seedRun.current++
+      setSeeding(null)
+      model.clearRows()
+    }
+  }
+
+  function changePerTable(n: number) {
+    setPerTable(n)
+    savePref(PER_TABLE_KEY, String(n))
+    if (allRows) void seedAll(n)
+  }
 
   async function seedTable(table: string) {
     const info = model.tables.get(table)
@@ -111,10 +193,17 @@ export default function EstigiaPage() {
   // Esquema cargado -> esqueleto de tablas. Con ?table=&id= se abre directamente esa fila.
   const focusTable = searchParams.get('table')
   const focusId = searchParams.get('id')
+  // Con "todas las filas" activado, el mapa se despliega entero al abrirlo.
+  const autoSeed = useEffectEvent(() => {
+    if (allRows) void seedAll(perTable)
+  })
   useEffect(() => {
     if (!graph.data) return
     model.loadSchema(graph.data)
-    if (!focusTable || !focusId || !model.tables.get(focusTable)?.explorable) return
+    if (!focusTable || !focusId || !model.tables.get(focusTable)?.explorable) {
+      queueMicrotask(() => autoSeed())
+      return
+    }
     let cancelled = false
     queryClient
       .fetchQuery({
@@ -245,12 +334,47 @@ export default function EstigiaPage() {
             className="flex items-center gap-1 rounded px-2 py-1 text-muted hover:bg-raised hover:text-accent-soft disabled:opacity-40"
             disabled={rowCount === 0}
             onClick={() => {
+              seedRun.current++
+              setSeeding(null)
               model.clearRows()
               setSelectedId(null)
             }}
           >
             <RefreshIcon width={12} height={12} /> limpiar
           </button>
+        </div>
+        <div className="flex items-center gap-1 rounded-lg border border-line bg-surface/85 p-1 font-mono text-[11px] backdrop-blur">
+          <button
+            type="button"
+            aria-pressed={allRows}
+            title="Siembra filas de todas las tablas y las une por sus FKs. Se recuerda al volver."
+            className={`rounded px-2 py-1 hover:bg-raised ${
+              allRows ? 'bg-accent/15 text-accent-soft' : 'text-muted hover:text-accent-soft'
+            }`}
+            onClick={toggleAllRows}
+          >
+            ✦ todas las filas
+          </button>
+          <label className="flex items-center gap-1 pr-1 text-faint">
+            <select
+              className="rounded border border-line bg-bg px-1 py-0.5 text-fg outline-none focus:border-accent"
+              value={perTable}
+              aria-label="Filas por tabla"
+              onChange={(e) => changePerTable(Number(e.target.value))}
+            >
+              {PER_TABLE_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+            / tabla
+          </label>
+          {seeding && (
+            <span className="px-1 text-accent-soft tabular-nums">
+              sembrando {seeding.done}/{seeding.total}…
+            </span>
+          )}
         </div>
       </div>
 
