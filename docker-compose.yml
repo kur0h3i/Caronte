@@ -13,9 +13,9 @@ services:
     environment:
       CARONTE_CONFIG_FILE: /config/connections.toml
     ports:
-      # Toda la LAN. Para exponerlo solo por Tailscale usa la IP del nodo:
-      #   - "100.x.y.z:8000:8000"
-      - "8000:8000"
+      # El puerto se elige con CARONTE_PORT en .env (por defecto 8000). Toda la LAN;
+      # para exponerlo solo por Tailscale antepón la IP del nodo: "100.x.y.z:${CARONTE_PORT:-8000}:..."
+      - "${CARONTE_PORT:-8000}:${CARONTE_PORT:-8000}"
     volumes:
       - ./connections.toml:/config/connections.toml:ro
       # Ficheros SQLite (rutas relativas del TOML se resuelven respecto a /config):

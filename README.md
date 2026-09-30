@@ -49,7 +49,12 @@ cp connections.example.toml connections.toml   # define tus bases de datos
 docker compose up -d --build
 ```
 
-Caronte queda en `http://<servidor>:8000`.
+Caronte queda en `http://<servidor>:8000`. Para otro puerto, pon `CARONTE_PORT=48213` (o el
+que quieras) en `.env`: vale tanto con la red normal de Docker como con `network_mode: host`.
+
+- **BD en `localhost` del propio servidor (Linux)**: en `docker-compose.yml` quita `ports:` y
+  `extra_hosts:` y añade `network_mode: host`; así `localhost` en `connections.toml` es el
+  servidor y no hay que tocar la configuración de Postgres.
 
 - **Solo Tailscale**: en `docker-compose.yml` cambia `"8000:8000"` por
   `"100.x.y.z:8000:8000"` (la IP Tailscale del servidor). Con `tailscale serve` tendrás
@@ -130,6 +135,7 @@ Todas las variables llevan el prefijo `CARONTE_`:
 | `CARONTE_SESSION_TTL` | `43200` | Duración de la sesión, en segundos |
 | `CARONTE_COOKIE_SECURE` | `false` | Marca la cookie como `Secure` (actívalo con HTTPS) |
 | `CARONTE_STATIC_DIR` | — (`/app/static` en Docker) | Carpeta del frontend compilado |
+| `CARONTE_PORT` | `8000` | Puerto del contenedor (solo Docker) |
 
 ### Conexiones
 
