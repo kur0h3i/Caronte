@@ -86,3 +86,13 @@
     outline-offset: 1px;
   }
 }
+
+/* Barra de carga del grid */
+@keyframes caronte-load {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
