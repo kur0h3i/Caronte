@@ -4,6 +4,7 @@ import re
 from contextlib import suppress
 
 from sqlalchemy import Connection, Dialect, inspect, text
+from sqlalchemy import types as sa_types
 from sqlalchemy.engine.reflection import ObjectKind
 
 from app.connections.registry import ManagedConnection
@@ -90,6 +91,8 @@ def _column_info(
         raw_type=raw_type_name(col["type"], dialect),
         nullable=bool(col.get("nullable", True)),
         enum_values=enum_values,
+        compare_as_text=norm == "enum"
+        or (norm == "text" and not isinstance(col["type"], sa_types.String)),
     )
 
 

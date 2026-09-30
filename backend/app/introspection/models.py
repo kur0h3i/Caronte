@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 NormType = Literal["int", "numeric", "text", "bool", "date", "datetime", "json", "enum"]
 
@@ -13,6 +13,9 @@ class ColumnInfo(BaseModel):
     raw_type: str
     nullable: bool
     enum_values: list[str] | None = None
+    # Interno: comparar haciendo CAST a texto (enums nativos, UUID, TIME...). Evita errores
+    # como "operator does not exist: review_mood = character varying" en Postgres.
+    compare_as_text: bool = Field(default=False, exclude=True)
 
 
 class ForeignKeyInfo(BaseModel):

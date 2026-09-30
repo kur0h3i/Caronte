@@ -10,6 +10,7 @@ from fastapi import APIRouter, FastAPI
 from app.config import Settings
 from app.connections.registry import ConnectionRegistry
 from app.connections.router import router as connections_router
+from app.data.router import router as data_router
 from app.introspection.cache import SchemaCache
 from app.introspection.router import router as introspection_router
 
@@ -50,6 +51,7 @@ def create_app(
     api = APIRouter(prefix="/api")
     api.include_router(connections_router)
     api.include_router(introspection_router)
+    api.include_router(data_router)
 
     app.include_router(public)
     app.include_router(api)

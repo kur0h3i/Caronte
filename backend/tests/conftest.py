@@ -99,13 +99,14 @@ def make_settings(**overrides) -> Settings:
     return Settings(_env_file=None, **values)
 
 
-@pytest.fixture
-def anon_client(chinook) -> Iterator[TestClient]:
-    app = create_app(make_settings(), environ={"CARONTE_DB_CHINOOK": chinook.url})
-    with TestClient(app) as client:
-        yield client
+def make_client(chinook: Chinook, **settings) -> TestClient:
+    app = create_app(make_settings(**settings), environ={"CARONTE_DB_CHINOOK": chinook.url})
+    return TestClient(app)
 
 
-@pytest.fixture
-def client(anon_client) -> TestClient:
-    return anon_client
+# La API es de solo lectura, así que un cliente por motor sirve para toda la sesión
+# (y la introspección se hace una sola vez).
+@pytest.fixture(scope="session")
+def client(chinook) -> Iterator[TestClient]:
+    with make_client(chinook) as test_client:
+        yield test_client

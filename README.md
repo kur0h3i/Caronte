@@ -89,6 +89,49 @@ en modo solo lectura (`default_transaction_read_only` en Postgres,
 `SET SESSION TRANSACTION READ ONLY` en MariaDB/MySQL, `mode=ro` + `query_only` en SQLite);
 y se recomienda usar un usuario de BD que solo tenga `SELECT`.
 
+## API
+
+Todas las rutas cuelgan de `/api` y son `GET` (salvo login/logout).
+
+| Ruta | Devuelve |
+| --- | --- |
+| `/connections` | Conexiones configuradas: nombre y motor |
+| `/connections/{c}/tables` | Tablas y vistas: nombre, filas aproximadas, nº de FKs |
+| `/connections/{c}/tables/{t}/meta` | Columnas (tipo normalizado y nativo), PK y FKs con su columna de display |
+| `/connections/{c}/tables/{t}/rows` | Filas paginadas, ordenadas y filtradas |
+
+Parámetros de `rows`:
+
+- `limit` (1–500, por defecto 100) y `offset`.
+- `sort=Columna` o `sort=-Columna` (descendente). Una FK se ordena por su etiqueta.
+  Siempre se desempata por la PK para que la paginación sea estable.
+- `filters`: JSON con una lista de `{"column", "op", "value"}`, combinados con AND.
+  Operadores: `eq`, `ne`, `lt`, `lte`, `gt`, `gte`, `contains` (sin distinguir mayúsculas;
+  en una FK busca en la etiqueta), `is_null`, `not_null`.
+
+  ```
+  /rows?sort=-Milliseconds&filters=[{"column":"GenreId","op":"eq","value":1}]
+  ```
+
+Cada FK de una columna llega como `{"id": 1, "label": "Rock"}`. La etiqueta sale de un
+`LEFT JOIN` a la columna de display de la tabla referenciada, elegida por prioridad:
+`name`, `nombre`, `title`, `titulo`, `email`, `username` (sin distinguir mayúsculas ni
+tildes); si no hay, la primera columna de texto; y si tampoco, la PK. Se puede forzar
+por tabla con `display_columns` en `connections.toml`.
+
+Los números `NUMERIC`/`DECIMAL` se envían como texto para no perder precisión, y los
+enteros mayores de 2^53 también.
+
+### Seguridad
+
+- **Identificadores** (tablas y columnas, también en `sort` y `filters`): se validan contra
+  la lista obtenida por introspección y los entrecomilla SQLAlchemy. Si no existen → `400`.
+- **Valores**: siempre como parámetros enlazados; en `contains` se escapan `%` y `_`.
+- **Límites**: `limit` ≤ 500, como mucho 20 filtros y timeout por sentencia
+  (`CARONTE_STATEMENT_TIMEOUT`). Si se agota → `504`. Si solo se agota el recuento total,
+  las filas se devuelven igualmente con `total: null`.
+- Tests de inyección en `backend/tests/test_injection.py`.
+
 ## Créditos
 
 Los scripts de Chinook (`dev/chinook/`) son de
