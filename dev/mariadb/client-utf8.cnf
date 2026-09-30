@@ -1,0 +1,4 @@
+# Sin esto, el cliente que ejecuta los scripts de init puede leerlos como latin1
+# y los nombres con acentos de Chinook quedarían corruptos.
+[client]
+default-character-set = utf8mb4

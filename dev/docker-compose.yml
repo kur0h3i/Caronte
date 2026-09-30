@@ -1,0 +1,39 @@
+# Bases de datos de ejemplo (Chinook) para desarrollo.
+#   docker compose -f dev/docker-compose.yml up -d
+# Puertos no estándar (5433/3307) para no chocar con instalaciones locales.
+name: caronte-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - ./chinook/Chinook_PostgreSql.sql:/docker-entrypoint-initdb.d/01-chinook.sql:ro
+      - ./postgres/02-demo.sql:/docker-entrypoint-initdb.d/02-demo.sql:ro
+      - ./postgres/03-readonly.sql:/docker-entrypoint-initdb.d/03-readonly.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "caronte_ro", "-d", "chinook"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: mariadb
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    ports:
+      - "127.0.0.1:3307:3306"
+    volumes:
+      - ./mariadb/client-utf8.cnf:/etc/mysql/conf.d/client-utf8.cnf:ro
+      - ./chinook/Chinook_MySql.sql:/docker-entrypoint-initdb.d/01-chinook.sql:ro
+      - ./mariadb/02-demo.sql:/docker-entrypoint-initdb.d/02-demo.sql:ro
+      - ./mariadb/03-readonly.sql:/docker-entrypoint-initdb.d/03-readonly.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      timeout: 3s
+      retries: 40

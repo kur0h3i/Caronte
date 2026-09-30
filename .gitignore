@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Frontend compilado copiado al backend para producción local
+backend/static/
+
+# Datos locales y secretos
+dev/data/
+.env
+connections.toml
+!dev/connections.toml
+!connections.example.toml
+
+# Editores / SO
+.idea/
+.vscode/
+.DS_Store

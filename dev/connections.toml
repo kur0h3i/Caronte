@@ -1,0 +1,11 @@
+# Conexiones de desarrollo contra las BDs de dev/docker-compose.yml.
+# Las rutas relativas de SQLite se resuelven respecto a este fichero.
+
+[connections.chinook_pg]
+url = "postgresql+psycopg://caronte_ro:caronte_ro@127.0.0.1:5433/chinook"
+
+[connections.chinook_mariadb]
+url = "mysql+pymysql://caronte_ro:caronte_ro@127.0.0.1:3307/Chinook"
+
+[connections.chinook_sqlite]
+url = "sqlite:///data/chinook.sqlite"
