@@ -10,6 +10,8 @@ from fastapi import APIRouter, FastAPI
 from app.config import Settings
 from app.connections.registry import ConnectionRegistry
 from app.connections.router import router as connections_router
+from app.introspection.cache import SchemaCache
+from app.introspection.router import router as introspection_router
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
@@ -37,6 +39,7 @@ def create_app(
     )
     app.state.settings = settings
     app.state.registry = registry
+    app.state.schema_cache = SchemaCache(ttl=settings.schema_cache_ttl)
 
     public = APIRouter(prefix="/api")
 
@@ -46,6 +49,7 @@ def create_app(
 
     api = APIRouter(prefix="/api")
     api.include_router(connections_router)
+    api.include_router(introspection_router)
 
     app.include_router(public)
     app.include_router(api)
