@@ -1,4 +1,13 @@
-import type { Connection, RowsParams, RowsResponse, TableMeta, TableSummary, User } from './types'
+import type {
+  Connection,
+  Neighbors,
+  RowsParams,
+  RowsResponse,
+  SchemaGraph,
+  TableMeta,
+  TableSummary,
+  User,
+} from './types'
 
 export class ApiError extends Error {
   readonly status: number
@@ -45,6 +54,14 @@ export const api = {
   tables: (conn: string) => request<TableSummary[]>(`/connections/${seg(conn)}/tables`),
   meta: (conn: string, table: string) =>
     request<TableMeta>(`/connections/${seg(conn)}/tables/${seg(table)}/meta`),
+  graph: (conn: string) => request<SchemaGraph>(`/connections/${seg(conn)}/graph`),
+  neighbors: (conn: string, table: string, id: string | number, limit = 12) =>
+    request<Neighbors>(
+      `/connections/${seg(conn)}/tables/${seg(table)}/neighbors?${new URLSearchParams({
+        id: String(id),
+        limit: String(limit),
+      })}`,
+    ),
   rows: (conn: string, table: string, params: RowsParams, signal?: AbortSignal) => {
     const qs = new URLSearchParams({ limit: String(params.limit), offset: String(params.offset) })
     if (params.sort) qs.set('sort', params.sort)

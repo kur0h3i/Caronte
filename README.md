@@ -105,6 +105,30 @@ en modo solo lectura (`default_transaction_read_only` en Postgres,
 `SET SESSION TRANSACTION READ ONLY` en MariaDB/MySQL, `mode=ro` + `query_only` en SQLite);
 y se recomienda usar un usuario de BD que solo tenga `SELECT`.
 
+## Qué puedes hacer
+
+- **Tablas**: barra lateral con buscador, filas aproximadas y nº de FKs.
+- **Grid**: paginación, orden y filtros en servidor; columnas redimensionables; filas
+  virtualizadas (páginas de hasta 500 sin que se resienta el navegador). Todo el estado va
+  en la URL, así que se puede compartir o volver atrás.
+  - Filtros por columna: `rock` (contiene), `=Rock`, `!=Rock`, `>5`, `<=5`, `10..20`,
+    `2024-03-01` (todo el día en columnas fecha-hora), `null`, `!null`; en una FK el texto
+    busca en la etiqueta y `#12` busca el id. Booleanos y enums tienen desplegable.
+  - Celdas por tipo: barra proporcional en números, pastillas en enums y textos con pocos
+    valores, fechas relativas (la absoluta en el tooltip), `NULL` diferenciado, JSON plegable
+    y FKs como `etiqueta #id` que abren la fila referenciada.
+- **Vista general** de la conexión con una gráfica de filas por tabla (ECharts).
+- **Estigia** (mapa de datos, pestaña ✦ en la cabecera), inspirado en el grafo de Obsidian:
+  - Cada tabla es un astro (su tamaño crece con el nº de filas) y cada FK un hilo entre astros.
+  - Doble clic en una tabla **siembra filas** que orbitan a su alrededor; doble clic en una
+    fila **despliega sus relaciones**: a qué filas apunta y cuáles la referencian. Así se
+    puede seguir el hilo por toda la base de datos.
+  - Las tablas pivote N:M (p. ej. `playlist_track`) se atraviesan: una pista enlaza
+    directamente con sus playlists (línea discontinua).
+  - Al pasar el ratón se iluminan los vecinos; zoom con la rueda, arrastrar para moverse,
+    buscador de nodos, leyenda por colores y partículas que viajan en el sentido de cada FK.
+  - El nº de fila del grid es un enlace que abre esa fila directamente en Estigia.
+
 ## API
 
 Todas las rutas cuelgan de `/api`, son `GET` (salvo login/logout) y exigen sesión
@@ -116,6 +140,8 @@ Todas las rutas cuelgan de `/api`, son `GET` (salvo login/logout) y exigen sesi�
 | `/connections/{c}/tables` | Tablas y vistas: nombre, filas aproximadas, nº de FKs |
 | `/connections/{c}/tables/{t}/meta` | Columnas (tipo normalizado y nativo), PK y FKs con su columna de display |
 | `/connections/{c}/tables/{t}/rows` | Filas paginadas, ordenadas y filtradas |
+| `/connections/{c}/graph` | Esquema como grafo: tablas (display, ¿explorable?, ¿pivote?) y relaciones |
+| `/connections/{c}/tables/{t}/neighbors?id=` | Una fila, las filas a las que apunta y las que la referencian (`limit` por relación, máx. 50) |
 
 Parámetros de `rows`:
 

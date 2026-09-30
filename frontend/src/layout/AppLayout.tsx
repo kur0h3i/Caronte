@@ -1,10 +1,25 @@
-import { Link, Outlet, useNavigate, useParams } from 'react-router'
+import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { useConnections, useLogout, useMe } from '../api/hooks'
-import { DatabaseIcon, LogoMark, LogoutIcon, MoonIcon, SunIcon } from '../components/icons'
+import {
+  ConstellationIcon,
+  DatabaseIcon,
+  LogoMark,
+  LogoutIcon,
+  MoonIcon,
+  SunIcon,
+  TableIcon,
+} from '../components/icons'
 import { useTheme } from '../theme/theme'
+
+function tabClass(active: boolean) {
+  return `flex items-center gap-1.5 rounded-md px-2.5 py-1 transition ${
+    active ? 'bg-accent/15 text-accent-soft' : 'text-muted hover:text-accent-soft'
+  }`
+}
 
 export function AppLayout() {
   const { conn } = useParams()
+  const isMap = useLocation().pathname.endsWith('/estigia')
   const connections = useConnections()
   const me = useMe()
   const logout = useLogout()
@@ -37,6 +52,21 @@ export function AppLayout() {
             ))}
           </select>
         </label>
+
+        {conn && (
+          <nav className="flex items-center gap-0.5 rounded-lg border border-line bg-bg p-0.5 font-mono text-xs">
+            <Link to={`/c/${encodeURIComponent(conn)}`} className={tabClass(!isMap)}>
+              <TableIcon width={13} height={13} /> tablas
+            </Link>
+            <Link
+              to={`/c/${encodeURIComponent(conn)}/estigia`}
+              className={tabClass(isMap)}
+              title="Estigia: mapa de datos y sus relaciones"
+            >
+              <ConstellationIcon width={13} height={13} /> estigia
+            </Link>
+          </nav>
+        )}
 
         <div className="ml-auto flex items-center gap-1">
           <button

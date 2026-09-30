@@ -73,6 +73,56 @@ export interface RowsResponse {
   offset: number
 }
 
+// --- Mapa de datos (Estigia) ---
+
+export interface GraphTable {
+  name: string
+  kind: 'table' | 'view'
+  approx_rows: number | null
+  primary_key: string[]
+  display_column: string | null
+  explorable: boolean
+  junction: boolean
+}
+
+export interface GraphRelation {
+  name: string | null
+  from_table: string
+  from_columns: string[]
+  to_table: string
+  to_columns: string[]
+}
+
+export interface SchemaGraph {
+  tables: GraphTable[]
+  relations: GraphRelation[]
+}
+
+export interface NodeRef {
+  table: string
+  id: string | number
+  label: CellValue
+}
+
+export interface OutgoingLink extends NodeRef {
+  column: string
+}
+
+export interface IncomingGroup {
+  table: string
+  column: string
+  via: string | null
+  total: number | null
+  items: NodeRef[]
+}
+
+export interface Neighbors {
+  node: NodeRef
+  row: Row
+  outgoing: OutgoingLink[]
+  incoming: IncomingGroup[]
+}
+
 export interface RowsParams {
   limit: number
   offset: number

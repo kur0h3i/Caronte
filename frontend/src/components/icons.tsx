@@ -144,6 +144,17 @@ export const DatabaseIcon = (p: IconProps) => (
   </Icon>
 )
 
+export const ConstellationIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m5 6 7 3 6-5M12 9l-2 9 9-2" />
+    <circle cx="5" cy="6" r="1.6" fill="currentColor" />
+    <circle cx="12" cy="9" r="1.6" fill="currentColor" />
+    <circle cx="18" cy="4" r="1.6" fill="currentColor" />
+    <circle cx="10" cy="18" r="1.6" fill="currentColor" />
+    <circle cx="19" cy="16" r="1.6" fill="currentColor" />
+  </Icon>
+)
+
 export const RefreshIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M21 12a9 9 0 1 1-2.6-6.4L21 8M21 3v5h-5" />

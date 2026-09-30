@@ -8,8 +8,9 @@ import { ConnectionLayout } from './layout/ConnectionLayout'
 import { HomeRedirect } from './pages/HomeRedirect'
 import { TablePage } from './pages/TablePage'
 
-// ECharts pesa: la vista general se carga bajo demanda en su propio fichero JS.
+// ECharts y d3 pesan: estas vistas se cargan bajo demanda en su propio fichero JS.
 const ConnectionPage = lazy(() => import('./pages/ConnectionPage'))
+const EstigiaPage = lazy(() => import('./pages/EstigiaPage'))
 
 const fallback = (
   <div className="p-6">
@@ -22,6 +23,7 @@ const fallback = (
 //   /                       -> primera conexión
 //   /c/:conn                -> vista general de la conexión
 //   /c/:conn/t/:table       -> datos de la tabla (orden, filtros y página van en ?query)
+//   /c/:conn/estigia        -> mapa de datos (?table=&id= abre una fila concreta)
 export default function App() {
   return (
     <Routes>
@@ -45,6 +47,14 @@ export default function App() {
           />
           <Route path="t/:table" element={<TablePage />} />
         </Route>
+        <Route
+          path="c/:conn/estigia"
+          element={
+            <Suspense fallback={fallback}>
+              <EstigiaPage />
+            </Suspense>
+          }
+        />
         <Route path="*" element={<EmptyState title="404 · aquí no hay nada" />} />
       </Route>
     </Routes>

@@ -21,6 +21,7 @@ import { FilterCell } from './FilterCell'
 import { HeaderCell } from './HeaderCell'
 import { Pagination } from './Pagination'
 import type { GridParams } from './params'
+import { RowNumber } from './RowNumber'
 
 // Solo registramos las features que usamos. Orden y paginación son "manuales":
 // la tabla no reordena ni recorta nada, solo refleja el estado y avisa de cambios;
@@ -68,11 +69,18 @@ export function DataGrid({ meta, data, params, onParamsChange, isFetching }: Pro
           size: 58,
           enableResizing: false,
           enableSorting: false,
-          cell: (ctx) => (
-            <span className="w-full text-right text-faint tabular-nums">
-              {offset + ctx.row.index + 1}
-            </span>
-          ),
+          cell: (ctx) =>
+            meta.primary_key.length === 1 ? (
+              <RowNumber
+                n={offset + ctx.row.index + 1}
+                table={meta.name}
+                pk={ctx.row.original[meta.primary_key[0]]}
+              />
+            ) : (
+              <span className="w-full text-right text-faint tabular-nums">
+                {offset + ctx.row.index + 1}
+              </span>
+            ),
         }),
         ...meta.columns.map((col) =>
           helper.accessor((row) => row[col.name], {

@@ -1,0 +1,229 @@
+import type { CellValue, GraphTable, Neighbors, Row, SchemaGraph } from '../api/types'
+
+/**
+ * Modelo del mapa "Estigia" (sin dibujo ni física: eso es cosa de engine.ts).
+ *
+ * Hay dos clases de nodos:
+ *   - tabla: un "astro" por tabla; su tamaño crece con el nº de filas.
+ *   - fila: una estrella pequeña que orbita su tabla; se añaden al "sembrar" filas de una
+ *     tabla o al desplegar las relaciones de otra fila.
+ * Y cuatro clases de enlaces:
+ *   - schema: FK entre tablas (el esqueleto del esquema).
+ *   - member: fila -> su tabla (la mantiene cerca de su astro).
+ *   - fk:     fila -> fila referenciada (sigue la dirección de la FK).
+ *   - m2m:    fila <-> fila a través de una tabla pivote (N:M).
+ */
+
+export type NodeKind = 'table' | 'row'
+export type LinkKind = 'schema' | 'member' | 'fk' | 'm2m'
+
+export interface NodeData {
+  id: string
+  kind: NodeKind
+  table: string
+  rowId?: string | number
+  label: string
+  colorIndex: number
+  radius: number
+  expanded: boolean
+  junction: boolean
+  /** Nodo junto al que aparece al crearse (efecto de "brotar"). */
+  spawnNear?: string
+}
+
+export interface LinkData {
+  id: string
+  kind: LinkKind
+  source: string
+  target: string
+  label: string
+}
+
+export const tableNodeId = (table: string) => `t:${table}`
+export const rowNodeId = (table: string, id: string | number) => `r:${table}:${id}`
+
+const MAX_LABEL = 40
+
+export function labelText(value: CellValue | undefined, fallback: string): string {
+  if (value == null || value === '') return fallback
+  const text =
+    typeof value === 'object'
+      ? 'label' in value && value.label != null
+        ? String(value.label)
+        : JSON.stringify(value)
+      : String(value)
+  return text.length > MAX_LABEL ? `${text.slice(0, MAX_LABEL - 1)}…` : text
+}
+
+function plainId(value: CellValue | undefined): string | number | undefined {
+  if (value == null) return undefined
+  if (typeof value === 'object' && !Array.isArray(value) && 'id' in value) {
+    return plainId(value.id)
+  }
+  return typeof value === 'number' || typeof value === 'string' ? value : String(value)
+}
+
+/**
+ * Es un "store" externo: React lo lee con useSyncExternalStore(model.subscribe, model.getVersion)
+ * y cada mutación llama a notify() para que la vista se actualice.
+ */
+export class MapModel {
+  private listeners = new Set<() => void>()
+  private version = 0
+
+  subscribe = (listener: () => void) => {
+    this.listeners.add(listener)
+    return () => {
+      this.listeners.delete(listener)
+    }
+  }
+
+  getVersion = () => this.version
+
+  private notify() {
+    this.version++
+    for (const listener of this.listeners) listener()
+  }
+
+  nodeList(): NodeData[] {
+    return [...this.nodes.values()]
+  }
+
+  linkList(): LinkData[] {
+    return [...this.links.values()]
+  }
+
+  nodes = new Map<string, NodeData>()
+  links = new Map<string, LinkData>()
+  /** Datos de cada fila (para el panel lateral). */
+  rows = new Map<string, Row>()
+  /** Vecinos ya consultados de cada fila desplegada. */
+  neighbors = new Map<string, Neighbors>()
+  tables = new Map<string, GraphTable>()
+  /** Cuántas filas se han sembrado por tabla (para pedir las siguientes). */
+  seeded = new Map<string, number>()
+  private colors = new Map<string, number>()
+
+  loadSchema(graph: SchemaGraph) {
+    this.nodes.clear()
+    this.links.clear()
+    this.rows.clear()
+    this.neighbors.clear()
+    this.seeded.clear()
+    this.tables = new Map(graph.tables.map((t) => [t.name, t]))
+    this.colors = new Map(
+      [...graph.tables].sort((a, b) => a.name.localeCompare(b.name)).map((t, i) => [t.name, i]),
+    )
+    for (const t of graph.tables) {
+      this.nodes.set(tableNodeId(t.name), {
+        id: tableNodeId(t.name),
+        kind: 'table',
+        table: t.name,
+        label: t.name,
+        colorIndex: this.colorOf(t.name),
+        radius: t.junction ? 7 : 10 + 4 * Math.log10((t.approx_rows ?? 0) + 1),
+        expanded: false,
+        junction: t.junction,
+      })
+    }
+    for (const r of graph.relations) {
+      this.addLink('schema', tableNodeId(r.from_table), tableNodeId(r.to_table), r.from_columns[0])
+    }
+    this.notify()
+  }
+
+  colorOf(table: string): number {
+    return this.colors.get(table) ?? 0
+  }
+
+  get rowCount(): number {
+    let n = 0
+    for (const node of this.nodes.values()) if (node.kind === 'row') n++
+    return n
+  }
+
+  addLink(kind: LinkKind, source: string, target: string, label: string) {
+    if (source === target) return
+    const id = `${kind}:${source}->${target}:${label}`
+    if (!this.links.has(id)) this.links.set(id, { id, kind, source, target, label })
+  }
+
+  /** Añade (o actualiza) una fila y la engancha a su tabla. Devuelve el id del nodo. */
+  addRow(table: string, rowId: string | number, label: string, spawnNear?: string): string {
+    const id = rowNodeId(table, rowId)
+    const existing = this.nodes.get(id)
+    if (existing) {
+      if (existing.label.startsWith('#') && !label.startsWith('#')) existing.label = label
+      return id
+    }
+    this.nodes.set(id, {
+      id,
+      kind: 'row',
+      table,
+      rowId,
+      label,
+      colorIndex: this.colorOf(table),
+      radius: 4.5,
+      expanded: false,
+      junction: false,
+      spawnNear: spawnNear ?? tableNodeId(table),
+    })
+    this.addLink('member', id, tableNodeId(table), '')
+    return id
+  }
+
+  /** Filas de muestra de una tabla (las que devolvió /rows). */
+  seedRows(table: string, rows: Row[]) {
+    const info = this.tables.get(table)
+    const pk = info?.primary_key[0]
+    if (!info || !pk) return
+    for (const row of rows) {
+      const rowId = plainId(row[pk])
+      if (rowId === undefined) continue
+      const id = this.addRow(
+        table,
+        rowId,
+        labelText(info.display_column ? row[info.display_column] : undefined, `#${rowId}`),
+      )
+      this.rows.set(id, row)
+    }
+    this.seeded.set(table, (this.seeded.get(table) ?? 0) + rows.length)
+    this.notify()
+  }
+
+  /** Incorpora la vecindad de una fila: a qué apunta y quién la referencia. */
+  applyNeighbors(data: Neighbors): string {
+    const { node } = data
+    const center = this.addRow(node.table, node.id, labelText(node.label, `#${node.id}`))
+    const centerNode = this.nodes.get(center)!
+    centerNode.label = labelText(node.label, `#${node.id}`)
+    centerNode.expanded = true
+    centerNode.radius = 6.5
+    this.rows.set(center, data.row)
+    this.neighbors.set(center, data)
+
+    for (const out of data.outgoing) {
+      const id = this.addRow(out.table, out.id, labelText(out.label, `#${out.id}`), center)
+      this.addLink('fk', center, id, out.column)
+    }
+    for (const group of data.incoming) {
+      for (const item of group.items) {
+        const id = this.addRow(group.table, item.id, labelText(item.label, `#${item.id}`), center)
+        if (group.via) this.addLink('m2m', center, id, group.via)
+        else this.addLink('fk', id, center, group.column)
+      }
+    }
+    this.notify()
+    return center
+  }
+
+  /** Quita todas las filas y deja solo el esqueleto de tablas. */
+  clearRows() {
+    for (const [id, node] of this.nodes) if (node.kind === 'row') this.nodes.delete(id)
+    for (const [id, link] of this.links) if (link.kind !== 'schema') this.links.delete(id)
+    this.rows.clear()
+    this.neighbors.clear()
+    this.seeded.clear()
+    this.notify()
+  }
+}
