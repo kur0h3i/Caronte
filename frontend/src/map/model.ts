@@ -23,6 +23,8 @@ export interface NodeData {
   table: string
   rowId?: string | number
   label: string
+  /** Etiqueta original, sin el #id que se añade cuando hay duplicadas. */
+  baseLabel?: string
   colorIndex: number
   radius: number
   expanded: boolean
@@ -148,12 +150,31 @@ export class MapModel {
     if (!this.links.has(id)) this.links.set(id, { id, kind, source, target, label })
   }
 
+  /**
+   * Si dos filas de la misma tabla tienen la misma etiqueta (p. ej. varias facturas con la
+   * misma dirección), todas muestran además su #id para poder distinguirlas en el mapa.
+   */
+  private uniqueLabel(table: string, rowId: string | number, base: string, selfId: string) {
+    if (base.startsWith('#')) return base
+    let duplicated = false
+    for (const n of this.nodes.values()) {
+      if (n.kind === 'row' && n.table === table && n.id !== selfId && n.baseLabel === base) {
+        duplicated = true
+        n.label = `${base} #${n.rowId}`
+      }
+    }
+    return duplicated ? `${base} #${rowId}` : base
+  }
+
   /** Añade (o actualiza) una fila y la engancha a su tabla. Devuelve el id del nodo. */
   addRow(table: string, rowId: string | number, label: string, spawnNear?: string): string {
     const id = rowNodeId(table, rowId)
     const existing = this.nodes.get(id)
     if (existing) {
-      if (existing.label.startsWith('#') && !label.startsWith('#')) existing.label = label
+      if (existing.label.startsWith('#') && !label.startsWith('#')) {
+        existing.baseLabel = label
+        existing.label = this.uniqueLabel(table, rowId, label, id)
+      }
       return id
     }
     this.nodes.set(id, {
@@ -161,7 +182,8 @@ export class MapModel {
       kind: 'row',
       table,
       rowId,
-      label,
+      baseLabel: label,
+      label: this.uniqueLabel(table, rowId, label, id),
       colorIndex: this.colorOf(table),
       radius: 4.5,
       expanded: false,
@@ -196,7 +218,8 @@ export class MapModel {
     const { node } = data
     const center = this.addRow(node.table, node.id, labelText(node.label, `#${node.id}`))
     const centerNode = this.nodes.get(center)!
-    centerNode.label = labelText(node.label, `#${node.id}`)
+    centerNode.baseLabel = labelText(node.label, `#${node.id}`)
+    centerNode.label = this.uniqueLabel(node.table, node.id, centerNode.baseLabel, center)
     centerNode.expanded = true
     centerNode.radius = 6.5
     this.rows.set(center, data.row)

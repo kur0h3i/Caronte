@@ -11,6 +11,7 @@ from app.config import Settings
 from app.connections.registry import ConnectionRegistry
 from app.connections.router import router as connections_router
 from app.data.router import router as data_router
+from app.frontend import mount_frontend
 from app.graph.router import router as graph_router
 from app.introspection.cache import SchemaCache
 from app.introspection.router import router as introspection_router
@@ -66,4 +67,7 @@ def create_app(
 
     app.include_router(public)
     app.include_router(api)
+    # Al final: la ruta comodín del frontend no debe tapar las de la API.
+    if settings.static_dir is not None:
+        mount_frontend(app, settings.static_dir)
     return app

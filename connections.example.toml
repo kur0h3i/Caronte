@@ -1,0 +1,13 @@
+# Copia este fichero a connections.toml. connections.toml no se sube al repositorio.
+# Recomendación: usa un usuario de base de datos con permisos de solo lectura (SELECT).
+
+[connections.ejemplo_postgres]
+url = "postgresql://caronte_ro:clave@host.docker.internal:5432/mi_bd"
+# schema = "public"                             # opcional (por defecto, el del usuario)
+# display_columns = { empleado = "apellido" }   # opcional: fuerza la etiqueta de una tabla
+
+[connections.ejemplo_mariadb]
+url = "mysql://caronte_ro:clave@192.168.1.20:3306/mi_bd"
+
+# [connections.ejemplo_sqlite]
+# url = "sqlite:///data/mi_bd.sqlite"            # relativa a este fichero (/config/data/...)

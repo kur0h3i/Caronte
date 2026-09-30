@@ -20,6 +20,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         if request.url.path.startswith("/api/"):
             # Los datos de la BD no deben quedarse en cachés intermedias ni del navegador.
             headers.setdefault("Cache-Control", "no-store")
+        elif request.url.path.startswith("/assets/") and response.status_code == 200:
+            headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
         if not request.url.path.startswith("/api/docs"):
             headers.setdefault("Content-Security-Policy", CONTENT_SECURITY_POLICY)
         return response
