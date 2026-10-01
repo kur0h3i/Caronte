@@ -1,15 +1,22 @@
-# Caronte
+<p align="center">
+  <img src="frontend/src/assets/caronte-logo.svg" alt="Logo de Caronte: la barca de Caronte cruza el Aqueronte cargada con una base de datos" width="128">
+</p>
+
+<h1 align="center">Caronte</h1>
 
 Explorador web de bases de datos **PostgreSQL**, **MariaDB/MySQL** y **SQLite**.
 Sirve para **ver** tus tablas, sus datos y cómo se relacionan. Es de **solo lectura**: no
 puede modificar nada.
+
+> Caronte es el barquero que cruza las almas por el Aqueronte; aquí cruza los datos, de la
+> base de datos hasta ti ([por qué el nombre](#el-nombre-y-el-logo)).
 
 Pensado para un servidor casero con Docker, accesible por la red local o Tailscale.
 
 **Índice:** [Instalación](#instalación-en-4-pasos) ·
 [Añadir bases de datos](#añadir-bases-de-datos) · [Cómo se usa](#cómo-se-usa) ·
 [Problemas frecuentes](#problemas-frecuentes) · [Actualizar](#actualizar) ·
-[Desarrollo](docs/desarrollo.md)
+[Desarrollo](docs/desarrollo.md) · [El nombre y el logo](#el-nombre-y-el-logo)
 
 ---
 
@@ -221,6 +228,31 @@ Tus ficheros `.env` y `connections.toml` no se tocan al actualizar.
   Si usas `tailscale serve` (HTTPS), pon `CARONTE_COOKIE_SECURE=true` en `.env`.
 
 Detalles técnicos, API y cómo desarrollar: [docs/desarrollo.md](docs/desarrollo.md).
+
+---
+
+## El nombre y el logo
+
+> *Ed ecco verso noi venir per nave*
+> *un vecchio, bianco per antico pelo,*
+> *gridando: «Guai a voi, anime prave!»*
+>
+> — Dante, *Infierno*, III, 82-84
+
+Caronte es el barquero del *Infierno* de Dante: cruza a las almas por el Aqueronte, el río que
+separa el mundo de los vivos del Infierno. Aquí cruza los datos: baja a la base de datos y te
+trae las filas, sin tocar nada por el camino. El logo, en la misma paleta que
+[Dis](https://github.com/kur0h3i/Dis) y [Cerbero](https://github.com/kur0h3i/Cerbero), dibuja
+el Canto III con lo que lleva esta barca:
+
+- **La barca** que llega «per nave» (v. 82), en el violeta de Dis y con el borde al rojo vivo.
+- **La carga: una base de datos**, de hierro al rojo como las murallas de Dis, encendida por
+  dentro como «lo fioco lume» (v. 75) con el que Dante ve la orilla.
+- **El Aqueronte**, «la trista riviera» (v. 78), en el lila de la Estigia de Dis.
+
+`frontend/src/assets/caronte-logo.svg` es el logo y `frontend/public/favicon.svg`, el mismo
+como icono de la pestaña. Dis lo muestra en su tarjeta y en su mapa: lo encuentra en
+`/favicon.svg`.
 
 ---
 
