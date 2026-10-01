@@ -1,4 +1,5 @@
 import type { SVGProps } from 'react'
+import logo from '../assets/caronte-logo.svg'
 
 type IconProps = SVGProps<SVGSVGElement>
 
@@ -21,18 +22,9 @@ function Icon({ children, ...props }: IconProps) {
   )
 }
 
-export const LogoMark = (props: IconProps) => (
-  <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true" {...props}>
-    <path
-      d="M5 19h22l-3.5 5.5h-15z"
-      fill="none"
-      stroke="var(--c-accent)"
-      strokeWidth="2"
-      strokeLinejoin="round"
-    />
-    <path d="M19 19 11 6" stroke="var(--c-accent-soft)" strokeWidth="2" strokeLinecap="round" />
-    <circle cx="11" cy="6" r="1.8" fill="var(--c-accent-soft)" />
-  </svg>
+/** Logo: Caronte en su barca sobre el Aqueronte (ver «El nombre y el logo» en el README). */
+export const LogoMark = ({ size = 28 }: { size?: number }) => (
+  <img src={logo} alt="" width={size} height={size} draggable={false} />
 )
 
 export const SunIcon = (p: IconProps) => (

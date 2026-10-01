@@ -1,15 +1,22 @@
-# Caronte
+<p align="center">
+  <img src="frontend/src/assets/caronte-logo.svg" alt="Logo de Caronte: el barquero encapuchado, con ojos de brasa, cruzando el Aqueronte en su barca" width="128">
+</p>
+
+<h1 align="center">Caronte</h1>
 
 Explorador web de bases de datos **PostgreSQL**, **MariaDB/MySQL** y **SQLite**.
 Sirve para **ver** tus tablas, sus datos y cómo se relacionan. Es de **solo lectura**: no
 puede modificar nada.
+
+> Caronte es el barquero que cruza las almas por el Aqueronte; aquí cruza los datos, de la
+> base de datos hasta ti ([por qué el nombre](#el-nombre-y-el-logo)).
 
 Pensado para un servidor casero con Docker, accesible por la red local o Tailscale.
 
 **Índice:** [Instalación](#instalación-en-4-pasos) ·
 [Añadir bases de datos](#añadir-bases-de-datos) · [Cómo se usa](#cómo-se-usa) ·
 [Problemas frecuentes](#problemas-frecuentes) · [Actualizar](#actualizar) ·
-[Desarrollo](docs/desarrollo.md)
+[Desarrollo](docs/desarrollo.md) · [El nombre y el logo](#el-nombre-y-el-logo)
 
 ---
 
@@ -221,6 +228,34 @@ Tus ficheros `.env` y `connections.toml` no se tocan al actualizar.
   Si usas `tailscale serve` (HTTPS), pon `CARONTE_COOKIE_SECURE=true` en `.env`.
 
 Detalles técnicos, API y cómo desarrollar: [docs/desarrollo.md](docs/desarrollo.md).
+
+---
+
+## El nombre y el logo
+
+> *Ed ecco verso noi venir per nave*
+> *un vecchio, bianco per antico pelo,*
+> *gridando: «Guai a voi, anime prave!»*
+>
+> — Dante, *Infierno*, III, 82-84
+
+Caronte es el barquero del *Infierno* de Dante: cruza a las almas por el Aqueronte, el río que
+separa el mundo de los vivos del Infierno. Aquí cruza los datos: baja a la base de datos y te
+trae las filas, sin tocar nada por el camino. El logo, en la misma paleta que
+[Dis](https://github.com/kur0h3i/Dis) y [Cerbero](https://github.com/kur0h3i/Cerbero), dibuja
+el Canto III:
+
+- **El barquero encapuchado**, en el violeta de Dis y con el borde al rojo vivo, y la barba
+  blanca de «un vecchio, bianco per antico pelo» (v. 83).
+- **«Occhi di bragia»** (v. 109): los ojos de brasa, rodeados «di fiamme rote» (v. 99).
+- **El remo** con el que «batte col remo qualunque s'adagia» (v. 111).
+- **Las almas** que «tutte le raccoglie» (v. 110), como llamas pálidas: las filas que trae de
+  la base de datos.
+- **El Aqueronte**, «la trista riviera» (v. 78), en el lila de la Estigia de Dis.
+
+`frontend/src/assets/caronte-logo.svg` es el logo y `frontend/public/favicon.svg`, el mismo
+como icono de la pestaña. Dis lo muestra en su tarjeta y en su mapa: lo encuentra en
+`/favicon.svg`.
 
 ---
 
