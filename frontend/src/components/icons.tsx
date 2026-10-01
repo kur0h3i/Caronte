@@ -22,7 +22,7 @@ function Icon({ children, ...props }: IconProps) {
   )
 }
 
-/** Logo: Caronte en su barca sobre el Aqueronte (ver «El nombre y el logo» en el README). */
+/** Logo: la barca de Caronte cruzando el Aqueronte con una base de datos (ver el README). */
 export const LogoMark = ({ size = 28 }: { size?: number }) => (
   <img src={logo} alt="" width={size} height={size} draggable={false} />
 )

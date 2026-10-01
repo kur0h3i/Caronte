@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/src/assets/caronte-logo.svg" alt="Logo de Caronte: el barquero encapuchado, con ojos de brasa, cruzando el Aqueronte en su barca" width="128">
+  <img src="frontend/src/assets/caronte-logo.svg" alt="Logo de Caronte: la barca de Caronte cruza el Aqueronte cargada con una base de datos" width="128">
 </p>
 
 <h1 align="center">Caronte</h1>
@@ -243,14 +243,11 @@ Caronte es el barquero del *Infierno* de Dante: cruza a las almas por el Aqueron
 separa el mundo de los vivos del Infierno. Aquí cruza los datos: baja a la base de datos y te
 trae las filas, sin tocar nada por el camino. El logo, en la misma paleta que
 [Dis](https://github.com/kur0h3i/Dis) y [Cerbero](https://github.com/kur0h3i/Cerbero), dibuja
-el Canto III:
+el Canto III con lo que lleva esta barca:
 
-- **El barquero encapuchado**, en el violeta de Dis y con el borde al rojo vivo, y la barba
-  blanca de «un vecchio, bianco per antico pelo» (v. 83).
-- **«Occhi di bragia»** (v. 109): los ojos de brasa, rodeados «di fiamme rote» (v. 99).
-- **El remo** con el que «batte col remo qualunque s'adagia» (v. 111).
-- **Las almas** que «tutte le raccoglie» (v. 110), como llamas pálidas: las filas que trae de
-  la base de datos.
+- **La barca** que llega «per nave» (v. 82), en el violeta de Dis y con el borde al rojo vivo.
+- **La carga: una base de datos**, de hierro al rojo como las murallas de Dis, encendida por
+  dentro como «lo fioco lume» (v. 75) con el que Dante ve la orilla.
 - **El Aqueronte**, «la trista riviera» (v. 78), en el lila de la Estigia de Dis.
 
 `frontend/src/assets/caronte-logo.svg` es el logo y `frontend/public/favicon.svg`, el mismo
