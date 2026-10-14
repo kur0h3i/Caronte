@@ -27,7 +27,7 @@ export function LoginPage() {
         className="w-full max-w-sm space-y-5 rounded-xl border border-line bg-surface/80 p-7 shadow-[0_0_60px_-20px_var(--c-accent)] backdrop-blur"
       >
         <div className="flex items-center gap-3">
-          <LogoMark width={34} height={34} />
+          <LogoMark size={44} />
           <div>
             <h1 className="font-mono text-xl font-semibold tracking-tight">
               caronte<span className="animate-pulse text-accent">_</span>
