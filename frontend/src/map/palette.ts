@@ -3,18 +3,19 @@ import type { MapColors } from './engine'
 
 // Un color por tabla: neones sobre fondo oscuro, tonos más profundos sobre fondo claro.
 const PALETTE_DARK = [
-  '#a855f7',
-  '#e879f9',
+  '#00f0ff',
+  '#ff2e88',
+  '#7a3df0',
+  '#fcee0a',
   '#38bdf8',
   '#34d399',
-  '#fbbf24',
-  '#fb7185',
-  '#818cf8',
+  '#fb923c',
+  '#a3e635',
+  '#e879f9',
   '#2dd4bf',
   '#f472b6',
-  '#a3e635',
   '#60a5fa',
-  '#fb923c',
+  '#818cf8',
 ]
 const PALETTE_LIGHT = [
   '#7c3aed',

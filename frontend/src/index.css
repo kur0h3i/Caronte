@@ -68,6 +68,11 @@
     height: 100%;
   }
 
+  #root {
+    position: relative;
+    z-index: 1;
+  }
+
   body {
     @apply bg-bg font-sans text-fg antialiased;
   }

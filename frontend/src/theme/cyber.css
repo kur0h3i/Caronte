@@ -1,0 +1,108 @@
+/* Estilo "Cerbero Cyber" (paquete en /mnt/project-files/estilo-cyber) adaptado a Caronte.
+   Solo el tema oscuro es cyber; el claro queda como estaba. El modo sereno (html[data-calm])
+   apaga brillos y baja el fondo para leer tablas. Las fuentes van en local (la CSP no admite CDN). */
+@import '@fontsource/orbitron/500.css';
+@import '@fontsource/orbitron/800.css';
+@import '@fontsource/rajdhani/500.css';
+@import '@fontsource/rajdhani/700.css';
+@import '@fontsource/share-tech-mono/400.css';
+
+.dark {
+  --c-bg: #03050c;
+  --c-surface: #050a14e6;
+  --c-raised: #0a1626;
+  --c-line: #0b4f5c;
+  --c-fg: #d6f7ff;
+  --c-muted: #5f8fa3;
+  --c-faint: #3f6577;
+  --c-accent: #00f0ff;
+  --c-accent-strong: #00c4d4;
+  --c-accent-soft: #7df9ff;
+  --c-on-accent: #03050c;
+  --c-danger: #ff2e88;
+  --c-ok: #34d399;
+}
+
+.dark body {
+  font-family: 'Rajdhani', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
+}
+
+/* Marca: tipografía de cabecera Orbitron */
+.dark .cy-title {
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 0.16em;
+  color: #fff;
+  text-shadow: 0 0 18px var(--c-accent);
+}
+
+/* Panel con esquinas de visor */
+.dark .cy-panel {
+  position: relative;
+  backdrop-filter: blur(3px);
+}
+.dark .cy-panel::before,
+.dark .cy-panel::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--c-accent);
+  filter: drop-shadow(0 0 4px var(--c-accent));
+  pointer-events: none;
+}
+.dark .cy-panel::before {
+  top: -1px;
+  left: -1px;
+  border-width: 2px 0 0 2px;
+}
+.dark .cy-panel::after {
+  right: -1px;
+  bottom: -1px;
+  border-width: 0 2px 2px 0;
+}
+
+/* Botón principal con esquinas cortadas */
+.dark .cy-btn {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
+  letter-spacing: 0.14em;
+}
+.dark .cy-btn:hover:not(:disabled) {
+  background: var(--c-danger);
+  color: #fff;
+}
+
+#cy-bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+html[data-calm] #cy-bg {
+  opacity: 0.14;
+}
+html[data-calm] .cy-title {
+  text-shadow: none;
+}
+html[data-calm] .cy-panel::before,
+html[data-calm] .cy-panel::after {
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dark *,
+  .dark *::before,
+  .dark *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

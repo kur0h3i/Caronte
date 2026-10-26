@@ -5,6 +5,8 @@ import { BrowserRouter } from 'react-router'
 import { queryClient } from './api/queryClient'
 import App from './App'
 import './index.css'
+import './theme/cyber.css'
+import { CyberBackground } from './components/CyberBackground'
 import { applyTheme, getStoredTheme } from './theme/theme'
 import { ThemeProvider } from './theme/ThemeProvider'
 
@@ -16,6 +18,7 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
+          <CyberBackground />
           <App />
         </BrowserRouter>
       </QueryClientProvider>

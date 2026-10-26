@@ -9,6 +9,7 @@ import {
   SunIcon,
   TableIcon,
 } from '../components/icons'
+import { resolveCalm, setCalmOverride, useCalmOverride } from '../theme/calm'
 import { useTheme } from '../theme/theme'
 
 function tabClass(active: boolean) {
@@ -25,11 +26,15 @@ export function AppLayout() {
   const logout = useLogout()
   const navigate = useNavigate()
   const { theme, toggle: toggleTheme } = useTheme()
+  const calm = resolveCalm(useCalmOverride(), useLocation().pathname)
 
   return (
     <div className="flex h-full flex-col">
       <header className="relative flex h-12 shrink-0 items-center gap-4 border-b border-line bg-surface px-4">
-        <Link to="/" className="flex items-center gap-2 font-mono font-semibold tracking-tight">
+        <Link
+          to="/"
+          className="cy-title flex items-center gap-2 font-mono font-semibold tracking-tight"
+        >
           <LogoMark />
           <span>
             caronte<span className="text-accent">_</span>
@@ -69,6 +74,17 @@ export function AppLayout() {
         )}
 
         <div className="ml-auto flex items-center gap-1">
+          {theme === 'dark' && (
+            <button
+              type="button"
+              onClick={() => setCalmOverride(calm ? 'full' : 'calm')}
+              aria-pressed={calm}
+              title="Modo sereno: fondo tenue y sin brillos, para leer datos"
+              className="rounded-md px-2 py-1 font-mono text-xs text-muted transition hover:bg-raised hover:text-accent-soft aria-pressed:text-accent-soft"
+            >
+              {calm ? 'sereno' : 'completo'}
+            </button>
+          )}
           <button
             type="button"
             onClick={toggleTheme}
