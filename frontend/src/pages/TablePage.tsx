@@ -96,16 +96,20 @@ function Toolbar({
 }: ToolbarProps) {
   const KindIcon = meta.kind === 'view' ? ViewIcon : TableIcon
   return (
-    <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-surface/60 px-4 py-2">
-      <h2 className="flex items-center gap-2 font-mono text-base font-semibold">
+    <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-line px-4 py-2">
+      <h2 className="hud-h2 !mb-0 items-center !justify-start gap-2 !text-sm !tracking-[0.18em]">
         <KindIcon className="text-accent" />
         {meta.name}
       </h2>
-      <span className="font-mono text-xs text-faint">
-        {filters.length ? formatInt(total) : `~${formatInt(total ?? meta.approx_rows)}`} filas ·{' '}
-        {meta.columns.length} columnas
-        {meta.foreign_keys.length > 0 && ` · ${meta.foreign_keys.length} FK`}
-      </span>
+      <div className="flex flex-wrap gap-1.5">
+        <span className="hud-tag">
+          {filters.length ? formatInt(total) : `~${formatInt(total ?? meta.approx_rows)}`} filas
+        </span>
+        <span className="hud-tag">{meta.columns.length} columnas</span>
+        {meta.foreign_keys.length > 0 && (
+          <span className="hud-tag r">{meta.foreign_keys.length} FK</span>
+        )}
+      </div>
 
       {filters.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
@@ -113,7 +117,7 @@ function Toolbar({
           {filters.map((f, i) => (
             <span
               key={`${f.column}-${f.op}-${i}`}
-              className="flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 py-0.5 pr-1 pl-2.5 font-mono text-[11px] text-accent-soft"
+              className="hud-tag y flex items-center gap-1 !py-0.5 !pr-1 !pl-2"
             >
               {describeFilter(f)}
               <button

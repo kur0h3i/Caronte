@@ -1,10 +1,12 @@
-import { useMemo } from 'react'
+import { type ReactNode, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useConnections, useTables } from '../api/hooks'
 import type { TableSummary } from '../api/types'
 import { EChart, type EChartOption } from '../components/EChart'
 import { ErrorBox, Spinner } from '../components/feedback'
+import { HudPanel } from '../components/hud'
 import { DatabaseIcon } from '../components/icons'
+import { blip } from '../lib/blip'
 import { formatCompact, formatInt } from '../lib/format'
 import { cssVar, useTheme } from '../theme/theme'
 
@@ -35,45 +37,93 @@ export default function ConnectionPage() {
   const rows = list.reduce((sum, t) => sum + (t.approx_rows ?? 0), 0)
   const relations = list.reduce((sum, t) => sum + t.fk_count, 0)
 
-  return (
-    <div className="min-h-0 flex-1 overflow-y-auto p-6">
-      <header className="mb-6 flex items-center gap-3">
-        <DatabaseIcon width={22} height={22} className="text-accent" />
-        <h2 className="font-mono text-xl font-semibold">{conn}</h2>
-        {dialect && (
-          <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 font-mono text-[11px] text-accent-soft">
-            {dialect}
-          </span>
-        )}
-      </header>
+  const top = [...list]
+    .filter((t) => t.approx_rows != null)
+    .sort((a, b) => (b.approx_rows ?? 0) - (a.approx_rows ?? 0))
+  const linked = [...list].filter((t) => t.fk_count > 0).sort((a, b) => b.fk_count - a.fk_count)
+  // Nombres de la BD como texto de React (nunca HTML).
+  const logLines: ReactNode[] = [
+    <>
+      <b>caronte</b> conexión <em>{conn}</em> abierta{dialect && ` · ${dialect}`}
+    </>,
+    <>
+      <b>esquema</b> {list.length - views} tablas · {views} vistas
+    </>,
+    ...top.slice(0, 3).map((t) => (
+      <>
+        <b>{t.name}</b> ~{formatInt(t.approx_rows)} filas
+      </>
+    )),
+    ...linked.slice(0, 3).map((t) => (
+      <>
+        <b>{t.name}</b> {t.fk_count} relaciones (FK)
+      </>
+    )),
+    <>
+      <b>modo</b> <u>solo lectura</u>
+    </>,
+  ]
 
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="tablas" value={formatInt(list.length - views)} />
-        <Stat label="vistas" value={formatInt(views)} />
-        <Stat label="filas (aprox.)" value={formatCompact(rows)} title={formatInt(rows)} />
-        <Stat label="relaciones (FK)" value={formatInt(relations)} />
+  return (
+    <div className="grid min-h-0 flex-1 gap-3 overflow-y-auto p-3 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start">
+      <div className="grid min-w-0 gap-3">
+        <HudPanel title="CONEXIÓN" aside="vista general">
+          <div className="flex flex-wrap items-center gap-3">
+            <DatabaseIcon width={26} height={26} className="text-accent" />
+            <h3 className="font-mono text-2xl font-semibold">{conn}</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {dialect && <span className="hud-tag">{dialect}</span>}
+              <span className="hud-tag y">solo lectura</span>
+              {relations > 0 && <span className="hud-tag r">{formatInt(relations)} FK</span>}
+            </div>
+          </div>
+          <div className="hud-kv mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Stat label="tablas" value={formatInt(list.length - views)} />
+            <Stat label="vistas" value={formatInt(views)} />
+            <Stat label="filas (aprox.)" value={formatCompact(rows)} title={formatInt(rows)} />
+            <Stat label="relaciones (FK)" value={formatInt(relations)} />
+          </div>
+        </HudPanel>
+
+        <HudPanel title="FILAS POR TABLA" aside="clic en una barra para abrirla">
+          <RowsChart conn={conn} tables={list} />
+        </HudPanel>
       </div>
 
-      <section className="rounded-xl border border-line bg-surface p-4">
-        <h3 className="mb-2 font-mono text-sm text-muted">filas por tabla</h3>
-        <RowsChart conn={conn} tables={list} />
-      </section>
-
-      <p className="mt-4 font-mono text-xs text-faint">
-        Elige una tabla en la barra lateral o haz clic en una barra.
-      </p>
+      <div className="grid min-w-0 gap-3">
+        <HudPanel title="ESCANEO" aside={`${list.length} objetos`}>
+          <div className="hud-radar" aria-hidden="true">
+            {list.slice(0, 14).map((t, i) => (
+              <i
+                key={t.name}
+                style={{
+                  left: `${blip(t.name, 7) * 100}%`,
+                  top: `${blip(t.name, 13) * 100}%`,
+                  animationDelay: `${(i % 5) * 0.4}s`,
+                }}
+              />
+            ))}
+          </div>
+        </HudPanel>
+        <HudPanel title="CONSOLA" aside="esquema">
+          <div className="hud-log">
+            {logLines.map((l, i) => (
+              <p key={i} className={i === logLines.length - 1 ? 'hud-cur' : ''}>
+                {l}
+              </p>
+            ))}
+          </div>
+        </HudPanel>
+      </div>
     </div>
   )
 }
 
 function Stat({ label, value, title }: { label: string; value: string; title?: string }) {
   return (
-    <div
-      className="rounded-xl border border-line bg-surface p-4 transition hover:border-accent/50"
-      title={title}
-    >
-      <div className="font-mono text-2xl font-semibold text-accent-soft tabular-nums">{value}</div>
-      <div className="mt-1 font-mono text-xs text-muted">{label}</div>
+    <div title={title}>
+      <small>{label}</small>
+      <b className="tabular-nums">{value}</b>
     </div>
   )
 }

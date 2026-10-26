@@ -44,7 +44,7 @@ export function useConnections() {
 }
 
 export function useTables(conn: string) {
-  return useQuery({ queryKey: keys.tables(conn), queryFn: () => api.tables(conn) })
+  return useQuery({ queryKey: keys.tables(conn), queryFn: () => api.tables(conn), enabled: !!conn })
 }
 
 export function useTableMeta(conn: string, table: string) {

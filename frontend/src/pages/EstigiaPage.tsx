@@ -260,7 +260,7 @@ export default function EstigiaPage() {
   }, [model, version])
 
   return (
-    <div className="relative min-w-0 flex-1 overflow-hidden">
+    <div className="hud-panel relative min-w-0 flex-1 overflow-hidden">
       <canvas
         ref={canvasRef}
         className="absolute inset-0 size-full"
