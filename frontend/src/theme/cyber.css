@@ -1,0 +1,479 @@
+/* Estilo "Cerbero Cyber" (paquete en /mnt/project-files/estilo-cyber) adaptado a Caronte.
+   Solo el tema oscuro es cyber; el claro queda como estaba. El modo sereno (html[data-calm])
+   apaga brillos y baja el fondo para leer tablas. Las fuentes van en local (la CSP no admite CDN). */
+@import '@fontsource/orbitron/500.css';
+@import '@fontsource/orbitron/800.css';
+@import '@fontsource/rajdhani/500.css';
+@import '@fontsource/rajdhani/700.css';
+@import '@fontsource/share-tech-mono/400.css';
+
+.dark {
+  --c-bg: #03050c;
+  --c-surface: #050a14e6;
+  --c-raised: #0a1626;
+  --c-line: #0b4f5c;
+  --c-fg: #d6f7ff;
+  --c-muted: #5f8fa3;
+  --c-faint: #3f6577;
+  --c-accent: #00f0ff;
+  --c-accent-strong: #00c4d4;
+  --c-accent-soft: #7df9ff;
+  --c-on-accent: #03050c;
+  --c-danger: #ff2e88;
+  --c-ok: #34d399;
+}
+
+.dark body {
+  font-family: 'Rajdhani', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
+}
+
+/* Marca: tipografía de cabecera Orbitron */
+.dark .cy-title {
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 0.16em;
+  color: #fff;
+  text-shadow: 0 0 18px var(--c-accent);
+}
+
+/* Panel con esquinas de visor */
+.dark .cy-panel {
+  position: relative;
+  backdrop-filter: blur(3px);
+}
+.dark .cy-panel::before,
+.dark .cy-panel::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--c-accent);
+  filter: drop-shadow(0 0 4px var(--c-accent));
+  pointer-events: none;
+}
+.dark .cy-panel::before {
+  top: -1px;
+  left: -1px;
+  border-width: 2px 0 0 2px;
+}
+.dark .cy-panel::after {
+  right: -1px;
+  bottom: -1px;
+  border-width: 0 2px 2px 0;
+}
+
+/* Botón principal con esquinas cortadas */
+.dark .cy-btn {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
+  letter-spacing: 0.14em;
+}
+.dark .cy-btn:hover:not(:disabled) {
+  background: var(--c-danger);
+  color: #fff;
+}
+
+#cy-bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1; /* dentro del contexto de #root: detrás del contenido */
+  pointer-events: none;
+}
+html[data-calm] #cy-bg {
+  opacity: 0.14;
+}
+html[data-calm] .cy-title {
+  text-shadow: none;
+}
+html[data-calm] .cy-panel::before,
+html[data-calm] .cy-panel::after {
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dark *,
+  .dark *::before,
+  .dark *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ---------- Estructura HUD (maqueta cerbero-os.html) ---------- */
+.hud-panel {
+  position: relative;
+  min-width: 0;
+  border: 1px solid var(--c-line);
+  background: var(--c-surface);
+}
+.hud-panel::before,
+.hud-panel::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--c-accent);
+  pointer-events: none;
+}
+.hud-panel::before {
+  top: -1px;
+  left: -1px;
+  border-width: 2px 0 0 2px;
+}
+.hud-panel::after {
+  right: -1px;
+  bottom: -1px;
+  border-width: 0 2px 2px 0;
+}
+.dark .hud-panel {
+  backdrop-filter: blur(3px);
+}
+.dark .hud-panel::before,
+.dark .hud-panel::after {
+  filter: drop-shadow(0 0 4px var(--c-accent));
+}
+html[data-calm] .hud-panel::before,
+html[data-calm] .hud-panel::after {
+  filter: none;
+}
+
+.hud-h2 {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 0 0.7rem;
+  font:
+    700 0.75rem 'Orbitron',
+    var(--font-mono);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+}
+.hud-h2 i {
+  font:
+    normal 12px 'Share Tech Mono',
+    var(--font-mono);
+  letter-spacing: 0;
+  color: var(--c-muted);
+}
+
+/* Cinta de estado */
+.hud-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 1px solid var(--c-line);
+  background: var(--c-surface);
+  padding: 0.2rem 0.8rem;
+  font:
+    13px 'Share Tech Mono',
+    var(--font-mono);
+  color: var(--c-accent);
+}
+.hud-ticker {
+  flex: 1;
+  overflow: hidden;
+  mask: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+.hud-ticker span {
+  display: inline-block;
+  padding-left: 100%;
+  color: var(--c-muted);
+  animation: hud-tick 45s linear infinite;
+}
+@keyframes hud-tick {
+  to {
+    transform: translateX(-100%);
+  }
+}
+.hud-led {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  box-shadow: 0 0 8px var(--c-accent);
+}
+.hud-led.warn {
+  background: #fcee0a;
+  box-shadow: 0 0 8px #fcee0a;
+}
+.hud-led.live {
+  background: var(--c-danger);
+  box-shadow: 0 0 8px var(--c-danger);
+  animation: hud-pulse 1.6s infinite;
+}
+@keyframes hud-pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* Título con glitch (solo modo completo) */
+.hud-title {
+  position: relative;
+  font-family: 'Orbitron', var(--font-mono);
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.dark .hud-title {
+  color: #fff;
+  text-shadow:
+    0 0 18px var(--c-accent),
+    0 0 42px #00f0ff66;
+}
+.dark .hud-title::before,
+.dark .hud-title::after {
+  content: attr(data-t);
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+.dark .hud-title::before {
+  color: var(--c-danger);
+  animation: hud-gl1 6s infinite;
+}
+.dark .hud-title::after {
+  color: var(--c-accent);
+  animation: hud-gl2 6s infinite;
+}
+@keyframes hud-gl1 {
+  0%,
+  92%,
+  100% {
+    opacity: 0;
+  }
+  93% {
+    opacity: 0.9;
+    transform: translate(-4px, 1px);
+    clip-path: inset(10% 0 55% 0);
+  }
+  96% {
+    opacity: 0.9;
+    transform: translate(3px, -1px);
+    clip-path: inset(60% 0 8% 0);
+  }
+}
+@keyframes hud-gl2 {
+  0%,
+  92%,
+  100% {
+    opacity: 0;
+  }
+  94% {
+    opacity: 0.9;
+    transform: translate(4px, 0);
+    clip-path: inset(40% 0 30% 0);
+  }
+  97% {
+    opacity: 0.9;
+    transform: translate(-3px, 1px);
+    clip-path: inset(5% 0 70% 0);
+  }
+}
+html[data-calm] .hud-title,
+html[data-calm] .hud-title::before,
+html[data-calm] .hud-title::after {
+  text-shadow: none;
+  animation: none;
+  opacity: 1;
+}
+html[data-calm] .hud-title::before,
+html[data-calm] .hud-title::after {
+  display: none;
+}
+html[data-calm] .hud-ticker span {
+  animation: none;
+  padding-left: 0;
+}
+
+/* Elemento de menú (módulos / tablas) */
+.hud-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.05rem 0.6rem;
+  align-items: center;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid transparent;
+  border-left: 3px solid var(--c-line);
+  background: color-mix(in oklab, var(--c-accent) 4%, transparent);
+  transition: 0.15s;
+}
+.hud-item:hover,
+.hud-item.on {
+  border-color: var(--c-accent);
+  border-left-color: var(--c-danger);
+  background: color-mix(in oklab, var(--c-accent) 11%, transparent);
+  transform: translateX(3px);
+}
+.hud-item .code {
+  font:
+    12px 'Share Tech Mono',
+    var(--font-mono);
+  color: var(--c-danger);
+}
+.hud-item .name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font:
+    700 0.95rem 'Orbitron',
+    var(--font-mono);
+  letter-spacing: 0.06em;
+}
+.hud-item .desc {
+  grid-column: 2 / 4;
+  font-size: 0.8rem;
+  color: var(--c-muted);
+}
+
+/* Etiqueta con esquina cortada */
+.hud-tag {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--c-accent);
+  color: var(--c-accent);
+  font:
+    12px 'Share Tech Mono',
+    var(--font-mono);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%);
+}
+.hud-tag.r {
+  border-color: var(--c-danger);
+  color: var(--c-danger);
+}
+.hud-tag.y {
+  border-color: #fcee0a;
+  color: #fcee0a;
+}
+
+/* Cifras clave */
+.hud-kv > div {
+  border-left: 2px solid #7a3df0;
+  padding-left: 0.6rem;
+}
+.hud-kv small {
+  display: block;
+  font:
+    12px 'Share Tech Mono',
+    var(--font-mono);
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+.hud-kv b {
+  font:
+    700 1.5rem 'Orbitron',
+    var(--font-mono);
+}
+
+/* Radar */
+.hud-radar {
+  position: relative;
+  width: 100%;
+  max-width: 14rem;
+  margin: auto;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid var(--c-accent);
+  background:
+    radial-gradient(
+      circle,
+      transparent 24%,
+      #00f0ff33 24.5%,
+      transparent 25%,
+      transparent 49%,
+      #00f0ff33 49.5%,
+      transparent 50%,
+      transparent 74%,
+      #00f0ff33 74.5%,
+      transparent 75%
+    ),
+    linear-gradient(#00f0ff22 1px, transparent 1px) center / 100% 50%,
+    linear-gradient(90deg, #00f0ff22 1px, transparent 1px) center / 50% 100%;
+}
+.hud-radar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #00f0ff00 0 80%, #00f0ff77 100%);
+  animation: hud-spin 3.2s linear infinite;
+}
+@keyframes hud-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.hud-radar i {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-danger);
+  box-shadow: 0 0 10px var(--c-danger);
+  animation: hud-pulse 2s infinite;
+}
+html[data-calm] .hud-radar::before,
+html[data-calm] .hud-radar i {
+  animation: none;
+}
+html[data-calm] .hud-radar::before {
+  display: none;
+}
+
+/* Consola */
+.hud-log {
+  font:
+    13px/1.5 'Share Tech Mono',
+    var(--font-mono);
+  color: var(--c-muted);
+}
+.hud-log p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.hud-log b {
+  color: var(--c-accent);
+  font-weight: 400;
+}
+.hud-log em {
+  color: #fcee0a;
+  font-style: normal;
+}
+.hud-log u {
+  color: var(--c-danger);
+  text-decoration: none;
+}
+.hud-cur::after {
+  content: '█';
+  color: var(--c-accent);
+  animation: hud-pulse 1s steps(1) infinite;
+}
+
+/* Rejilla de líneas de pantalla (solo oscuro y modo completo) */
+.dark body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, #0000 0 2px, #00000038 2px 3px),
+    radial-gradient(ellipse at center, transparent 70%, #0006 100%);
+}
+html[data-calm] body::after {
+  display: none;
+}

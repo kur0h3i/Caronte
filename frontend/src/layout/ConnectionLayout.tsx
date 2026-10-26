@@ -6,7 +6,7 @@ export function ConnectionLayout() {
   return (
     <>
       <Sidebar conn={conn} />
-      <main className="flex min-w-0 flex-1 flex-col">
+      <main className="hud-panel flex min-w-0 flex-1 flex-col">
         <Outlet />
       </main>
     </>
